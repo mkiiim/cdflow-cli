@@ -1,0 +1,103 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Configuration files handled by local config/.gitignore
+
+# Storage and logs
+logs/
+storage/
+assets/static/
+donationdata_*/
+
+# Custom logos (ignore contents but not directory)
+assets/logos/custom/*
+!assets/logos/custom/.gitkeep
+
+# Development
+test_env/
+.python-version
+
+# Generated scripts (copied from /scripts/ during build)
+cdflow_cli/scripts/
+
+# Development artifacts
+progress_memory_*.md
+test_*.md
+git*.md
+application.log
+TODO.md
+TESTING_SUITE_COVERAGE.md
+
+# MkDocs
+site/

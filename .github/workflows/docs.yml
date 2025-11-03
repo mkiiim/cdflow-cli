@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2025 Mark Emila (Caestudy) <https://caestudy.com>
+# SPDX-License-Identifier: BSL-1.1
+
+name: Deploy MkDocs Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+      - 'LICENSE'           # Trigger on license changes
+      - 'CLA.md'            # Trigger on CLA changes
+      - 'README.md'         # Trigger on README changes
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Sync root files to docs
+        run: |
+          echo "Syncing LICENSE, CLA.md, README.md to docs/"
+          cp LICENSE docs/license.md
+          cp CLA.md docs/cla.md
+
+          # Sync README with link transformations
+          sed 's|](docs/|](|g; s|](LICENSE)|](license.md)|g; s|](CLA.md)|](cla.md)|g' README.md > docs/index.md
+
+          echo "Files synced successfully"
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs-material
+          pip install mkdocs-git-revision-date-localized-plugin
+
+      - name: Build and deploy documentation
+        run: mkdocs gh-deploy --force
