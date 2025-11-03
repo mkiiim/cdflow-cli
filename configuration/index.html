@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Configuration - cdflow CLI Docs</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../css/typography.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">cdflow CLI Docs</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Usage & Config</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../usage/" class="dropdown-item">Usage Guide</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Configuration</a>
+</li>
+                                    
+<li>
+    <a href="../data_formats/" class="dropdown-item">Data Formats</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Plugins</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../plugins/overview/" class="dropdown-item">Overview</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Troubleshooting</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../contributing/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Legal</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../license/" class="dropdown-item">License</a>
+</li>
+                                    
+<li>
+    <a href="../cla/" class="dropdown-item">CLA</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../usage/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../data_formats/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#configuration" class="nav-link">Configuration</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#generating-configuration-templates" class="nav-link">Generating Configuration Templates</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#application-configuration-file-eg-localyaml" class="nav-link">Application Configuration File (e.g., local.yaml)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#oauth-configuration-environment-variables" class="nav-link">OAuth Configuration (Environment Variables)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="configuration">Configuration</h1>
+<p>DonationFlow CLI is configured using a YAML configuration file and environment variables for OAuth credentials. The configuration file contains application settings while OAuth credentials are provided via environment variables for security.</p>
+<h2 id="generating-configuration-templates">Generating Configuration Templates</h2>
+<p>The <code>cdflow init</code> command generates configuration templates that you can customize for your deployment. See the <a href="../usage/#setting-up-configuration-cdflow-init">Usage Guide</a> for detailed instructions.</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>init
+<span class="c1"># Creates templates in ~/.config/cdflow/ and ~/.env/</span>
+</code></pre></div>
+<p>This creates:
+- <code>~/.config/cdflow/local.yaml</code> - Main application configuration file
+- <code>~/.env/nb_local.env</code> - OAuth environment variables template
+- <code>~/.config/cdflow/plugins/</code> - Plugin examples for customization </p>
+<h2 id="application-configuration-file-eg-localyaml">Application Configuration File (e.g., <code>local.yaml</code>)</h2>
+<p>This is the main application configuration file. It contains settings for storage, logging, and the import process itself. Below is a breakdown of the sections relevant to the CLI tool.</p>
+<h3 id="storage"><code>storage</code></h3>
+<p>This section defines the paths for various files used by the application. You will need to customize these paths for your system.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/jobs&quot;</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/logs&quot;</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/output&quot;</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/import_source&quot;</span>
+</code></pre></div>
+<ul>
+<li><code>jobs</code>: The directory where the application will store JSON job files. These files contain a summary of each import run and are useful for auditing.</li>
+<li><code>logs</code>: The directory where the application will store detailed log files. A new log file is created for each import run.</li>
+<li><code>output</code>: The directory where the application will write the <code>_success.csv</code> and <code>_fail.csv</code> files of the records that have been successfully imported or have failed import</li>
+<li><code>cli_source</code>: The directory where the application will look for your CSV files to be imported, if not specified on the command line.</li>
+</ul>
+<h3 id="cli_import"><code>cli_import</code></h3>
+<p>This section configures the specifics of the default CLI import run, when no file and type are specified on the command line</p>
+<div class="highlight"><pre><span></span><code><span class="nt">cli_import</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">canadahelps</span>
+<span class="w">  </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ch/import.csv</span>
+</code></pre></div>
+<ul>
+<li><code>type</code>: The source of the import. Use <code>canadahelps</code> or <code>paypal</code>.</li>
+<li><code>file</code>: The path to the CSV file to be imported, relative to the <code>cli_source</code> directory.</li>
+</ul>
+<h3 id="automatic-job-tracking-fields">Automatic Job Tracking Fields</h3>
+<p>DonationFlow CLI automatically detects and populates job tracking fields of donation records when they exist in your NationBuilder nation:</p>
+<ul>
+<li><code>import_job_id</code>: Unique identifier for the import job that imported the donation record</li>
+<li><code>import_job_source</code>: JSON metadata including context, hostname, IP, and version info to audit and track down what machine ran the job that imported the donation record</li>
+</ul>
+<p>These fields are <strong>automatically detected</strong> via API call during import initialization. If the fields exist in your nation's donation schema, they will be populated. If they don't exist, they are silently omitted - no manual configuration required.</p>
+<p>To add these fields to your NationBuilder nation:
+1. Go to Settings &gt; Nation &gt; Custom fields in your NationBuilder admin
+2. Add custom fields to the Donations section:
+   - Field name: <code>import_job_id</code>, Type: Text
+   - Field name: <code>import_job_source</code>, Type: Text area</p>
+<h3 id="plugins"><code>plugins</code></h3>
+<p>This section configures the plugin system for customizing donation data processing:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">plugins</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">canadahelps</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;~/.config/cdflow/plugins/canadahelps&quot;</span>
+<span class="w">  </span><span class="nt">paypal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;~/.config/cdflow/plugins/paypal&quot;</span>
+</code></pre></div>
+<ul>
+<li><code>enabled</code>: Set to <code>true</code> to load and execute plugins for this adapter</li>
+<li><code>dir</code>: Directory containing plugin files (supports <code>~</code> for home directory)</li>
+</ul>
+<p>Plugins allow you to customize data transformations, tracking code mapping, payment type normalization, and eligibility filtering without modifying core code. See the <a href="../plugins/overview/">Plugin Examples</a> for more information.</p>
+<h3 id="other-sections">Other Sections</h3>
+<p>The <code>deployment</code>, <code>api</code>, <code>frontend</code>, and <code>logos</code> sections are used by a (future) browser-based version of this application and can be ignored for CLI usage.</p>
+<h2 id="oauth-configuration-environment-variables">OAuth Configuration (Environment Variables)</h2>
+<p>OAuth credentials are provided to DonationFlow CLI via environment variables for security. The <code>cdflow init</code> command creates a reference template at <code>~/.env/nb_local.env</code>:</p>
+<h3 id="edit-the-oauth-template">Edit the OAuth template</h3>
+<p>After running <code>cdflow init</code>, edit <code>~/.env/nb_local.env</code> with your NationBuilder credentials:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">NB_CLIENT_ID</span><span class="o">=</span>your_actual_client_id
+<span class="nv">NB_CLIENT_SECRET</span><span class="o">=</span>your_actual_client_secret
+<span class="nv">NB_SLUG</span><span class="o">=</span>your_nation_slug
+<span class="nv">NB_CONFIG_NAME</span><span class="o">=</span>development
+</code></pre></div>
+<h3 id="load-oauth-credentials-into-environment">Load OAuth credentials into environment</h3>
+<p>Use the included <code>load-secrets.sh</code> script to source your credentials:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Find the script location</span>
+python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import cdflow_cli; from pathlib import Path; print(Path(cdflow_cli.__file__).parent / &#39;scripts&#39; / &#39;load-secrets.sh&#39;)&quot;</span>
+
+<span class="c1"># Source the credentials (use the path from above)</span>
+<span class="nb">source</span><span class="w"> </span>/path/to/load-secrets.sh<span class="w"> </span>~/.env/nb_local.env
+</code></pre></div>
+<p>Alternatively, manually export the environment variables:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">NB_CLIENT_ID</span><span class="o">=</span>your_actual_client_id
+<span class="nb">export</span><span class="w"> </span><span class="nv">NB_CLIENT_SECRET</span><span class="o">=</span>your_actual_client_secret
+<span class="nb">export</span><span class="w"> </span><span class="nv">NB_SLUG</span><span class="o">=</span>your_nation_slug
+<span class="nb">export</span><span class="w"> </span><span class="nv">NB_CONFIG_NAME</span><span class="o">=</span>development
+</code></pre></div>
+<h3 id="about-env-files">About <code>.env</code> files</h3>
+<p>The <code>.env</code> files are provided as reference and templates for the environment variables that are required for <code>cdflow</code> to authenticate and connect to your nation instance on NationBuilder.</p>
+<p>In a development scenario an <code>.env</code> file can be used to quickly and easily "<code>source</code>" the set of environment variables for a specific environment. Multiple <code>.env</code> files can be created, one for each unique environment, and can facilitate the easy switching between the multiple environments.</p>
+<p>In a production environment, as a security and privacy best practice, <strong>it is best to NOT store these secrets in plain text files</strong> and to instead use your system's secrets management and procedures to create the environment variables in the session(s) in which <code>cdflow</code> is needed. </p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Usage Guide - cdflow CLI Docs</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../css/typography.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">cdflow CLI Docs</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Usage & Config</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Usage Guide</a>
+</li>
+                                    
+<li>
+    <a href="../configuration/" class="dropdown-item">Configuration</a>
+</li>
+                                    
+<li>
+    <a href="../data_formats/" class="dropdown-item">Data Formats</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Plugins</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../plugins/overview/" class="dropdown-item">Overview</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Troubleshooting</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../contributing/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Legal</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../license/" class="dropdown-item">License</a>
+</li>
+                                    
+<li>
+    <a href="../cla/" class="dropdown-item">CLA</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href=".." class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../configuration/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#usage" class="nav-link">Usage</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#setting-up-configuration-cdflow-init" class="nav-link">Setting Up Configuration (cdflow init)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#importing-donations-cdflow-import" class="nav-link">Importing Donations (cdflow import)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#rolling-back-donations-cdflow-rollback" class="nav-link">Rolling Back Donations (cdflow rollback)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#storage-configuration" class="nav-link">Storage Configuration</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="usage">Usage</h1>
+<p>This guide provides detailed instructions for using the <code>cdflow init</code>, <code>cdflow import</code> and <code>cdflow rollback</code> commands.</p>
+<h2 id="setting-up-configuration-cdflow-init">Setting Up Configuration (<code>cdflow init</code>)</h2>
+<p>Before using <code>cdflow</code>, you need to set up configuration files and set environment variables. The <code>cdflow init</code> command creates a template configuration .yaml file that you can customize and oauth .env files as a check list of environment variables required for authentication to NationBuilder.</p>
+<p>The default location for configuration <code>.yaml</code> files is <code>~/.config/cdflow/</code>. The location of config files is configurable.
+The default location for oauth <code>.env</code> files is <code>~/.env/</code>. The location of environment files is NOT configurable.</p>
+<h3 id="about-env-files">About <code>.env</code> files</h3>
+<p>A <code>.env</code> file is provided as a reference and template for the environment variables required for <code>cdflow</code> to authenticate and connect to your nation instance on NationBuilder.</p>
+<p>In a development scenario a <code>.env</code> file can be used to quickly and easily "<code>source</code>" the set of environment variables for a specific environment. Multiple <code>.env</code> files can be created, one for each unique environment, and can facilitate the easy switching between the multiple environments.</p>
+<p>In a production environment, as a security and privacy best practice, it is best to not store these secrets in plain text files and to instead use your system's secrets management and procedures to create the environment variables in the session(s) in which <code>cdflow</code> is needed.</p>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>init
+<span class="c1"># creates config templates in default location (~/.config/cdflow/)</span>
+<span class="c1"># creates oauth .env files in non-configurable location (~/.env/)</span>
+
+cdflow<span class="w"> </span>init<span class="w"> </span>--config-dir<span class="w"> </span>/path/to/config
+<span class="c1"># creates config templates in the specified location (/path/to/config)</span>
+<span class="c1"># creates oauth .env files in non-configurable locaiton (~/.env/)</span>
+</code></pre></div>
+<p>This creates:<br />
+- <code>~/.config/cdflow/local.yaml</code> - Main application configuration file (default location)<br />
+- <code>~/.env/nb_local.env</code> - OAuth environment variables template (non-configurable location)</p>
+<h3 id="options">Options</h3>
+<ul>
+<li><code>--config-dir</code>: Directory to specify the location to write configuration template file (default: <code>~/.config/cdflow/</code>)</li>
+<li><code>--force</code>: Overwrite existing files with templates without prompting</li>
+</ul>
+<h3 id="file-conflict-handling">File Conflict Handling</h3>
+<p>If configuration and/or oauth files with the same filename(s) already exist, <code>cdflow init</code> will prompt you to choose:
+- <strong>Overwrite</strong>: Replace existing files with fresh templates
+- <strong>Skip</strong>: Create only missing files, keep existing ones unchanged
+- <strong>Cancel</strong>: Exit without making changes</p>
+<p>Use <code>--force</code> to automatically overwrite without prompting.</p>
+<h3 id="setting-up-oauth-credentials">Setting Up OAuth Credentials</h3>
+<p>After running <code>cdflow init</code>, you need to configure your NationBuilder OAuth credentials:</p>
+<ol>
+<li>
+<p><strong>Edit the OAuth template:</strong>
+   <div class="highlight"><pre><span></span><code>nano<span class="w"> </span>~/.env/nb_local.env
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Add your credentials:</strong>
+   <div class="highlight"><pre><span></span><code><span class="nv">NB_CLIENT_ID</span><span class="o">=</span>your_actual_client_id
+<span class="nv">NB_CLIENT_SECRET</span><span class="o">=</span>your_actual_client_secret
+<span class="nv">NB_SLUG</span><span class="o">=</span>your_nation_slug
+<span class="nv">NB_CONFIG_NAME</span><span class="o">=</span>name_for_this_configuration_eg_develoment
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Source the environment using the provided <code>load-secrets.sh</code> shell script:</strong></p>
+<h4 id="locate-the-load-secretssh-script">Locate the <code>load-secrets.sh</code> script</h4>
+<p>If you are in the source repo:
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>./scripts/
+</code></pre></div>
+If you have installed via pip and have created your virtual environment:
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;path-to-venv-environment-directory&gt;/lib/python3.13/site-packages/cdflow_cli/scripts/
+</code></pre></div></p>
+<h4 id="execute-the-script-using-your-env-file-as-the-parameter">Execute the script using your <code>.env</code> file as the parameter</h4>
+<div class="highlight"><pre><span></span><code>./load-secrets.sh<span class="w"> </span>~/.env/nb_local.env
+</code></pre></div>
+</li>
+</ol>
+<h2 id="importing-donations-cdflow-import">Importing Donations (<code>cdflow import</code>)</h2>
+<p>This is the main command for importing donations into NationBuilder.</p>
+<h3 id="workflow">Workflow</h3>
+<ol>
+<li>
+<p><strong>Prepare your CSV file:</strong> Download your donation transaction report from CanadaHelps or PayPal. Ensure that the file is in the correct format (see <a href="../data_formats/">Data Formats</a> for details).</p>
+</li>
+<li>
+<p><strong>Place the CSV file:</strong> Move your CSV file into the appropriate subdirectory within the <code>cli_source</code> directory you defined in your configuration file. You can further organize your imports use <code>ch</code> for CanadaHelps files and <code>pp</code> for PayPal subdirectories to organize your imports by source system.</p>
+</li>
+<li>
+<p><strong>Configure the import:</strong> Open your configuration file (e.g., <code>local.yaml</code>) and update the <code>cli_import</code> section to specify the <code>type</code> (either <code>canadahelps</code> or <code>paypal</code>) and the <code>file</code> path (relative to <code>cli_source</code>).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">cli_import</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">canadahelps</span>
+<span class="w">  </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ch/your_donation_file.csv</span>
+</code></pre></div>
+</li>
+<li>
+<p><strong>Run the import command:</strong> Open your terminal and run the following command, replacing the path to your configuration file:</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+</code></pre></div>
+<p><strong>Alternative: Override import settings via CLI flags:</strong></p>
+<p>You can override the import type and file path from the config using CLI flags:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Override with relative path</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--type<span class="w"> </span>canadahelps<span class="w"> </span>--file<span class="w"> </span>donations/emergency.csv<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+<span class="c1"># Override with absolute path</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--type<span class="w"> </span>paypal<span class="w"> </span>--file<span class="w"> </span>/tmp/paypal_donations.csv<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+</code></pre></div>
+<p><strong>Important:</strong> When using CLI flags, both <code>--type</code> and <code>--file</code> must be used together. The configuration file is still required for OAuth settings, storage paths, and other configurations.</p>
+<h3 id="log-level-control">Log Level Control</h3>
+<p>Control the verbosity of console output with the <code>--log-level</code> option:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Show only errors</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>ERROR
+
+<span class="c1"># Show important milestones and errors</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>NOTICE
+
+<span class="c1"># Show all information (default, recommended)</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>INFO
+
+<span class="c1"># Show everything including debug details</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+</code></pre></div>
+<p><strong>Log Levels:</strong>
+- <code>ERROR</code>: Only show errors and failures
+- <code>NOTICE</code>: Show important milestones, confirmations, and errors
+- <code>INFO</code>: Show detailed progress and all of the levels above (default, recommended)
+- <code>DEBUG</code>: Show all diagnostic information and all of the levels above</p>
+<p>The default <code>INFO</code> level provides the right balance of detail for most users.</p>
+</li>
+<li>
+<p><strong>Monitor the progress:</strong> The application will print real-time progress updates to the console. You will see information about each record being processed.</p>
+</li>
+<li>
+<p><strong>Review the results:</strong> After the import is complete, you can review the results in the <code>output</code> directory you specified in your configuration.</p>
+<ul>
+<li><code>_success.csv</code>: This file contains all the records that were successfully imported, along with the new NationBuilder Person ID and Donation ID.</li>
+<li><code>_fail.csv</code>: This file contains any records that failed to import, along with any error message(s) in the <code>NB Error Message</code> column.</li>
+</ul>
+<p><br></p>
+</li>
+<li>
+<p><strong>Verify in NationBuilder:</strong> Log in to your NationBuilder account and navigate to the Finances section. You should see the newly imported donations in your transaction list.</p>
+</li>
+</ol>
+<h2 id="rolling-back-donations-cdflow-rollback">Rolling Back Donations (<code>cdflow rollback</code>)</h2>
+<p>This command allows you to delete donations that were previously imported. This is useful for correcting mistakes or for testing purposes.</p>
+<p><strong>Warning:</strong> This is a destructive operation. Please be sure you want to remove the donations from your nation before running this command.</p>
+<h3 id="workflow_1">Workflow</h3>
+<ol>
+<li>
+<p><strong>Run the rollback command:</strong> Open your terminal and run the following command, replacing the path to your configuration file:</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>rollback<span class="w"> </span>--config<span class="w"> </span>/path/to/your/config.yaml
+
+<span class="c1"># Or with custom log level</span>
+cdflow<span class="w"> </span>rollback<span class="w"> </span>--config<span class="w"> </span>/path/to/your/config.yaml<span class="w"> </span>--log-level<span class="w"> </span>NOTICE
+</code></pre></div>
+</li>
+<li>
+<p><strong>Select the import to rollback:</strong> The tool will scan your <code>output</code> directory for <code>_success.csv</code> files and present them as a list of completed imports. Use arrow keys to highlight the import and press enter to select</p>
+</li>
+<li>
+<p><strong>Confirm the operation:</strong> The tool will show you a summary of the rollback operation and ask for your confirmation before proceeding.</p>
+</li>
+<li>
+<p><strong>Monitor the progress:</strong> The application will output real-time progress updates to the console as it removes each donation in the selected <code>_success.csv</code> file, in the reverse order in which they were added.</p>
+</li>
+<li>
+<p><strong>Review the results:</strong> A new <code>_rollback.csv</code> file will be created in your <code>output</code> directory, containing the results of the rollback operation.</p>
+</li>
+</ol>
+<h2 id="storage-configuration">Storage Configuration</h2>
+<p>DonationFlow supports flexible storage configuration to accommodate different deployment scenarios.</p>
+<h3 id="basic-configuration-default">Basic Configuration (Default)</h3>
+<p>By default, storage paths are resolved relative to your current working directory:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/jobs&quot;</span><span class="w">                     </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/logs&quot;</span><span class="w">                     </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/output&quot;</span><span class="w">                 </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/app_upload&quot;</span><span class="w">         </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/app_processing&quot;</span><span class="w"> </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/import_source&quot;</span><span class="w">      </span><span class="c1"># Created relative to pwd</span>
+</code></pre></div>
+<h3 id="centralized-storage-with-base-path">Centralized Storage with Base Path</h3>
+<p>For server deployments or when you want all storage in a consistent location, use the <code>base_path</code> option:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">base_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/cdflow-data&quot;</span><span class="w">               </span><span class="c1"># Base directory for all storage</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jobs&quot;</span><span class="w">                             </span><span class="c1"># Resolves to /opt/cdflow-data/jobs</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;logs&quot;</span><span class="w">                             </span><span class="c1"># Resolves to /opt/cdflow-data/logs</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output&quot;</span><span class="w">                         </span><span class="c1"># Resolves to /opt/cdflow-data/output</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_upload&quot;</span><span class="w">                 </span><span class="c1"># Resolves to /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_processing&quot;</span><span class="w">         </span><span class="c1"># Resolves to /opt/cdflow-data/app_processing</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;import_source&quot;</span><span class="w">              </span><span class="c1"># Resolves to /opt/cdflow-data/import_source</span>
+</code></pre></div>
+<h3 id="mixed-configuration">Mixed Configuration</h3>
+<p>You can combine <code>base_path</code> with absolute path overrides for specific directories:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">base_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/cdflow-data&quot;</span><span class="w">                </span><span class="c1"># Base for relative paths</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;logs&quot;</span><span class="w">                              </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/logs</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jobs&quot;</span><span class="w">                              </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/jobs</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output&quot;</span><span class="w">                          </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/output</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_upload&quot;</span><span class="w">                  </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_processing&quot;</span><span class="w">          </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/import_source&quot;</span><span class="w"> </span><span class="c1"># Using absolute path: /path/to/your/import_source</span>
+</code></pre></div>
+<h3 id="benefits-of-base-path">Benefits of Base Path</h3>
+<ul>
+<li><strong>Server Deployments</strong>: Centralize all application data in one location</li>
+<li><strong>Permissions</strong>: Easier to manage file permissions for a single directory tree</li>
+<li><strong>Backups</strong>: Simple to backup entire application data directory</li>
+<li><strong>Docker</strong>: Clean separation of application data from container filesystem</li>
+<li><strong>Multi-User</strong>: Each user can have their own base_path in shared environments</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
