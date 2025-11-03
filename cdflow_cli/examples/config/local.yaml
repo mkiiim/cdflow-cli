@@ -1,0 +1,118 @@
+# NationBuilder Import Application Configuration
+# Copy this file to config/config_app.yaml and customize with your values
+
+# ==================== DEPLOYMENT CONFIGURATION ====================
+deployment:
+  # Deployment pattern - affects how the application binds to network interfaces
+  pattern: local                            # Options: local | network | container
+  
+  # Network Configuration
+  hostname: "localhost"                       # YOUR hostname/IP: "localhost", "my-server.local", "192.168.1.100", etc.
+  api_port: 8000                              # Backend API server port
+  frontend_port: 8008                         # Frontend React server port
+  
+  # Optional: Additional allowed origins for CORS (auto-generated if not specified)
+  additional_origins:
+    - "127.0.0.1"                           # localhost alias
+    - "10.0.0.0/24"                         # CIDR notation for subnet access
+    
+# ==================== API CONFIGURATION ====================
+api:
+  # Host binding - auto-determined by deployment pattern:
+  # local: binds to localhost, network: binds to 0.0.0.0 (all interfaces), container: binds to 0.0.0.0
+  host: auto                               # Binding address: auto (pattern-based) | localhost | 0.0.0.0
+  
+  # Port comes from deployment.api_port above
+  port: auto                               # API port: auto (uses deployment.api_port) | specific_port_number
+
+  # CORS origins - auto-generated from deployment settings
+  cors:
+    # Leave empty for auto-generation, or specify manually:
+    origins: []
+
+# ==================== FRONTEND CONFIGURATION ====================
+frontend:
+  # Frontend configuration - auto-determined by deployment pattern
+  host: auto                               # Frontend host: auto (pattern-based) | hostname
+  port: auto                               # Frontend port: auto (uses deployment.frontend_port) | specific_port_number
+
+# ==================== LOGO CONFIGURATION ====================
+logos:
+  use_custom: true                         # Enable custom organizational logos
+  custom_path: "assets/logos/custom"       # Directory for custom logo files  
+
+# ==================== PROCESSING CONFIGURATION ====================
+processing:
+  # File cleanup configuration (applies to both CLI and Web App)
+  cleanup:
+    enabled: true                          # Enable automatic character cleanup using uneff
+
+# ==================== LOGGING CONFIGURATION ====================
+logging:
+  file_level: "DEBUG"                      # File logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE
+  console_level: "INFO"                    # Console logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL, NONE
+
+# ==================== STORAGE CONFIGURATION ====================
+# All file paths - customize these for your system
+storage:
+  # Optional base path for all storage directories
+  # If specified, relative paths below are resolved against this base
+  # If not specified, paths are resolved relative to current working directory
+  # base_path: "/opt/cdflow-data"            # Uncomment for centralized storage
+  
+  paths:
+    # Core application directories
+    jobs: "storage/jobs"                     # Job metadata JSON files
+    logs: "storage/logs"                     # Application log files
+    output: "storage/output"                 # Success/fail CSV output files
+    
+    # CLI workflow directories  
+    cli_source: "storage/import_source"      # CLI source files (with ch/ and pp/ subdirectories)
+    
+    # Web app workflow directories
+    app_upload: "storage/app_upload"         # Web app file uploads (temporary)
+    app_processing: "storage/app_processing" # Web app processing workspace
+
+# Example with base_path enabled:
+# storage:
+#   base_path: "/opt/cdflow-data"
+#   paths:
+#     jobs: "jobs"                          # Becomes /opt/cdflow-data/jobs
+#     logs: "logs"                          # Becomes /opt/cdflow-data/logs
+#     output: "output"                      # Becomes /opt/cdflow-data/output
+#     cli_source: "import_source"           # Becomes /opt/cdflow-data/import_source
+#     app_upload: "app_upload"              # Becomes /opt/cdflow-data/app_upload
+#     app_processing: "app_processing"      # Becomes /opt/cdflow-data/app_processing
+#     temp: "/tmp/cdflow"                   # Absolute paths override base_path
+
+# ==================== CLI IMPORT CONFIGURATION ====================
+# CLI job system integration - unified file organization with web app
+cli_import:
+  # Source configuration
+  type: canadahelps                        # Options: canadahelps | paypal
+  file: ch/import.csv                      # Relative to cli_source path
+
+# ==================== PLUGIN CONFIGURATION ====================
+# Plugin system - customize data processing without modifying core code
+# Applies to both CLI and web app imports
+plugins:
+  canadahelps:
+    # enabled: false
+    # dir: "~/.config/cdflow/plugins/canadahelps"
+    #
+    # To use: set enabled=true, create .py files in dir
+    # Files execute alphabetically (use 01_, 02_ prefixes for ordering)
+    # Disable by prefixing with underscore (_disabled.py)
+    #
+    # Example: Custom anonymous donor email
+    #   from cdflow_cli.plugins.registry import register_plugin
+    #   @register_plugin("canadahelps", "row_transformer")
+    #   def custom_anon_email(row_data: dict) -> dict:
+    #       if row_data.get("DONOR EMAIL ADDRESS") == "ANON":
+    #           row_data["DONOR EMAIL ADDRESS"] = "anon@yourorg.com"
+    #       return row_data
+
+  paypal:
+    # enabled: false
+    # dir: "~/.config/cdflow/plugins/paypal"
+    # Same plugin pattern as CanadaHelps above

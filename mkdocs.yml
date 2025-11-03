@@ -1,0 +1,33 @@
+site_name: cdflow CLI Docs
+
+# Hooks for automatic file syncing
+hooks:
+  - mkdocs_hooks.py
+
+extra_css:
+  - css/typography.css
+
+markdown_extensions:
+  - fenced_code
+  - codehilite
+  - pymdownx.superfences
+
+# theme:
+#   name: material
+#   font:
+#     text: Roboto
+#     code: Fira Code
+
+nav:
+  - Home: index.md
+  - Usage & Config:
+      - Usage Guide: usage.md
+      - Configuration: configuration.md
+      - Data Formats: data_formats.md
+      - Plugins:
+          - Overview: plugins/overview.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing: contributing.md
+  - Legal:
+      - License: license.md
+      - CLA: cla.md

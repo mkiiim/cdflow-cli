@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdflow-cli"
+version = "1.0.0"
+description = "Caestudy DonationFlow - NationBuilder donation import CLI tool for external payment processors (CanadaHelps and PayPal)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "BSL-1.1"}
+authors = [
+    {name = "Mark Emila", email = "mark.emila@caestudy.com"}
+]
+keywords = ["nationbuilder", "donations", "import", "canadahelps", "paypal", "cli", "caestudy"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "requests>=2.25.0",
+    "pyyaml>=6.0",
+    "chardet>=4.0.0",
+    "python-dateutil>=2.8.0",
+    "colorama>=0.4.4",
+    "pytz>=2021.1",
+    "langcodes>=3.3.0",
+    "blessed>=1.17.0",
+    "pydantic>=1.8.0",
+    "uneff>=1.0.1",
+    "importlib-metadata>=1.0.0; python_version<'3.8'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "pytest-cov>=2.10.0",
+    "black>=21.0.0",
+    "flake8>=3.8.0",
+]
+
+[project.scripts]
+cdflow = "cdflow_cli.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/mkiiim/cdflow-cli"
+Repository = "https://github.com/mkiiim/cdflow-cli"
+"Bug Tracker" = "https://github.com/mkiiim/cdflow-cli/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cdflow_cli*"]
+
+[tool.setuptools.package-data]
+"cdflow_cli" = [
+    "py.typed",
+    "examples/config/*.yaml",
+    "examples/oauth/*.env",
+    "assets/logos/default/*.png",
+    "assets/static/*.png",
+    "scripts/*.sh",
+    "examples/plugins/**/*.py",
+    "examples/plugins/**/*.md"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore import order issues in test files where sys.path manipulation is needed
+"tests/**/*.py" = ["E402"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''

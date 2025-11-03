@@ -1,0 +1,6 @@
+# Ignore all custom logo files to keep the repository generic
+*
+!.gitignore
+
+# This directory is for user-provided custom logos
+# Place your organization's logos here and set use_custom: true in config
