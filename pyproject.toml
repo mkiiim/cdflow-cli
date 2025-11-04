@@ -53,7 +53,7 @@ dev = [
 cdflow = "cdflow_cli.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/mkiiim/cdflow-cli"
+Homepage = "https://mkiiim.github.io/cdflow-cli/"
 Repository = "https://github.com/mkiiim/cdflow-cli"
 "Bug Tracker" = "https://github.com/mkiiim/cdflow-cli/issues"
 
