@@ -5,7 +5,8 @@
 # WARNING: This script is for development convenience only.
 # Never use in production. Never commit secrets files.
 
-NB_SECRETS_FILE="${1:-$HOME/.config/nb_machine_dev_config.env}"
+NB_SECRETS_FILE="${1:-config/dev-secrets.env}"
+NB_SECRETS_DIR="$(dirname "$NB_SECRETS_FILE")"
 
 # Check NationBuilder secrets file
 if [ ! -f "$NB_SECRETS_FILE" ]; then
@@ -30,5 +31,3 @@ echo "   NB_CONFIG_NAME=${NB_CONFIG_NAME}"
 echo "   NB_SLUG=${NB_SLUG}"
 echo "   NB_CLIENT_ID=${NB_CLIENT_ID:0:10}..."
 echo "   NB_CLIENT_SECRET=***hidden***"
-echo ""
-echo "Ready to run: cdflow import --config /path/to/<your_config.yaml>"
