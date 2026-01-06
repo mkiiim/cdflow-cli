@@ -3,4 +3,9 @@
 
 """DonationFlow CLI Tools."""
 
-__version__ = "1.0.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("cdflow-cli")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "0.0.0"
