@@ -6,10 +6,11 @@
 #   just deps           # reinstall deps after requirements.txt changes
 #   just devdeps        # reinstall deps after requirements-dev.txt changes
 #   just rebuild        # delete .venv and recreate from scratch
+#   just lock           # regenerate requirements*.txt from pyproject.toml (uv)
 #   just test           # run tests (pytest)
 #   just lint           # flake8 lint
 #   just format         # black format
-#   just format-check  # black check (no changes)
+#   just format-check   # black check (no changes)
 #   just clean          # remove caches/build artifacts
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
@@ -28,6 +29,14 @@ DEVREQ := "requirements-dev.txt"
 default:
     @just --list
 
+# ---- Dependency locking (uv) ----
+# pyproject.toml is the source of truth.
+# requirements*.txt are generated artifacts.
+lock:
+    @uv pip compile pyproject.toml -o {{REQ}}
+    @uv pip compile pyproject.toml --extra dev -o {{DEVREQ}}
+    @echo "🔒 requirements.txt and requirements-dev.txt regenerated from pyproject.toml"
+
 # ---- Environment / Dependencies ----
 
 # Install/update runtime deps
@@ -36,7 +45,7 @@ deps:
     @test -f "{{REQ}}" || (echo "Missing {{REQ}}" && exit 1)
     @{{PIP}} install -r {{REQ}}
 
-# Install/update dev deps (includes runtime deps via -r requirements.txt)
+# Install/update dev deps
 devdeps:
     @test -x "{{PIP}}" || (echo "Missing venv. Run: just venv" && exit 1)
     @test -f "{{DEVREQ}}" || (echo "Missing {{DEVREQ}}" && exit 1)
