@@ -176,17 +176,17 @@ def run_cli(config=None, logging_provider=None) -> int:
     """
     # Use providers from bootstrap (same pattern as API server)
     if not all([config, logging_provider]):
-        # Fallback for backward compatibility if called without parameters
-        early_logging_provider = FileLoggingProvider(base_path="./logs", console_level="INFO")
-        early_logging_provider.initialize_bootstrap_logging()
-        logger = early_logging_provider.get_logger(__name__)
-        logger.warning(
-            "run_cli called without bootstrap providers; using compatibility bootstrap fallback"
+        fallback_logging_provider = FileLoggingProvider(base_path="./logs", console_level="INFO")
+        fallback_logging_provider.initialize_bootstrap_logging()
+        logger = fallback_logging_provider.get_logger(__name__)
+        logger.error(
+            "run_cli requires injected config and logging providers; call main() or initialize CLI bootstrap first"
         )
-        logging_provider = early_logging_provider
-    else:
-        logger = logging_provider.get_logger(__name__)
-        logger.debug("Using providers from bootstrap initialization")
+        fallback_logging_provider.shutdown()
+        return 1
+
+    logger = logging_provider.get_logger(__name__)
+    logger.debug("Using providers from bootstrap initialization")
 
     try:
         # Display startup message with formatting
@@ -196,39 +196,6 @@ def run_cli(config=None, logging_provider=None) -> int:
         logger.info("🚀 Launching DonationFlow Import Donations...")
         logger.info(f"{'─'*40}")
         print("\n")
-
-        # If no providers given, we need to handle fallback initialization
-        if not all([config, logging_provider]):
-            logger.warning(
-                "compatibility bootstrap fallback is resolving config and logging inside run_cli"
-            )
-            # Get config file path from command-line arguments or prompt
-            args = parse_arguments()
-            config_path = args.config
-            if not config_path:
-                config_path = input("Please enter the DonationFlow config YAML filename: ")
-
-            # Apply smart config path resolution
-            from ..utils.config_paths import resolve_config_path
-
-            resolved_config_path = resolve_config_path(config_path)
-
-            # Check if the configuration file exists
-            if not resolved_config_path.exists():
-                print("DonationFlow config file does not exist / not found")
-                logger.error(f"Config file not found: {resolved_config_path}")
-                return 1
-
-            # Initialize configuration provider
-            logger.debug(f"Loading config from {resolved_config_path}")
-            config = ConfigProvider(str(resolved_config_path))
-            logger.debug(f"Configuration loaded from {config_path}")
-
-            # Update logging provider
-            logging_config = config.get_logging_config()
-            if logging_config:
-                logging_provider = get_logging_provider(logging_config)
-                logger = logging_provider.get_logger(__name__)
 
         # Initialize paths system for direct Path operations
         from ..utils.paths import initialize_paths
@@ -652,4 +619,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     # This allows the module to be run directly for testing
-    sys.exit(run_cli())
+    sys.exit(main())
