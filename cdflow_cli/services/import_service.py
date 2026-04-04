@@ -691,6 +691,273 @@ class DonationImportService:
 
         return donation_id, False, message
 
+    def _prepare_import_rows(
+        self,
+        input_filename: str,
+        source_type: str,
+        success_filename: str,
+        fail_filename: str,
+        encoding: str,
+        processing_logger,
+        progress_callback,
+    ):
+        """
+        Read, clean, parse, and initialize import state before row processing.
+
+        Returns:
+            Tuple of (
+                reader_rows,
+                reader_row_count,
+                extended_fieldnames,
+                source_type_lower,
+                donation_class,
+                adapter_kwargs,
+                plugin_bundle,
+            ) or None on fatal setup failure.
+        """
+        processing_logger.debug(f"Reading input file: {input_filename}")
+        file_path = self.paths.app_processing / input_filename
+        raw_content = safe_read_text_file(file_path)
+
+        if self.config.is_cleanup_enabled():
+            processing_logger.debug(f"Applying file cleanup to {input_filename}")
+            input_content, was_modified = clean_csv_content_with_uneff(raw_content, input_filename)
+
+            if was_modified:
+                processing_logger.info(
+                    f"🧹 File cleanup applied to {input_filename}: problematic characters removed"
+                )
+            else:
+                processing_logger.debug(
+                    f"🧹 File cleanup checked {input_filename}: no changes needed"
+                )
+        else:
+            processing_logger.debug(
+                f"File cleanup disabled, processing original content for {input_filename}"
+            )
+            input_content = raw_content
+
+        reader = csv.DictReader(StringIO(input_content))
+        if not reader.fieldnames:
+            processing_logger.error(f"No field names found in CSV file: {input_filename}")
+            if progress_callback:
+                progress_callback(0, "Error: No field names found in CSV file")
+            return None
+
+        processing_logger.debug(f"CSV field names: {reader.fieldnames}")
+        processing_logger.debug(
+            f"CSV field names with case preserved: {[field for field in reader.fieldnames]}"
+        )
+
+        reader_rows = list(reader)
+        reader_row_count = len(reader_rows)
+        processing_logger.debug(f"Found {reader_row_count} rows in CSV file")
+
+        if reader_row_count == 0:
+            processing_logger.warning(f"No data rows found in file: {input_filename}")
+            if progress_callback:
+                progress_callback(100, "No data rows found in file")
+            return None
+
+        extended_fieldnames = reader.fieldnames + [
+            "NB Donation ID",
+            "NB People ID",
+            "NB People Create Date",
+            "NB Error Message",
+        ]
+        self._initialize_output_file(success_filename, extended_fieldnames, encoding)
+        self._initialize_output_file(fail_filename, extended_fieldnames, encoding)
+
+        try:
+            source_type_lower, donation_class, adapter_kwargs, plugin_bundle = (
+                self._resolve_import_adapter(source_type)
+            )
+        except ValueError:
+            processing_logger.error(f"Unsupported source type: {source_type}")
+            if progress_callback:
+                progress_callback(0, f"Error: Unsupported source type {source_type}")
+            return None
+
+        return (
+            reader_rows,
+            reader_row_count,
+            extended_fieldnames,
+            source_type_lower,
+            donation_class,
+            adapter_kwargs,
+            plugin_bundle,
+        )
+
+    def _report_row_progress(
+        self,
+        source_type: str,
+        row: Dict[str, Any],
+        row_counter: int,
+        reader_row_count: int,
+        success_count: int,
+        fail_count: int,
+        processing_logger,
+        progress_callback,
+    ) -> None:
+        """Log and emit progress updates for the current row."""
+        progress_percentage = ((row_counter - 1) / reader_row_count) * 100
+        processing_logger.info(f"\n{'─'*60}")
+        processing_logger.info(
+            f"PROCESSING RECORD {row_counter} of {reader_row_count}. {progress_percentage:.0f}% complete"
+        )
+        processing_logger.info(
+            f"Running totals: ✓ {success_count} success, ✗ {fail_count} failed"
+        )
+        processing_logger.info(f"{'─'*60}")
+
+        if progress_callback:
+            progress_callback(
+                progress_percentage,
+                f"Processing row {row_counter} of {reader_row_count}",
+                success_count,
+                fail_count,
+                reader_row_count,
+            )
+
+        if row_counter == 1:
+            processing_logger.debug(f"First row keys for {source_type}: {list(row.keys())}")
+
+    def _process_single_row(
+        self,
+        row: Dict[str, Any],
+        row_counter: int,
+        source_type_lower: str,
+        donation_class,
+        adapter_kwargs: Dict[str, Any],
+        plugin_bundle,
+        success_filename: str,
+        fail_filename: str,
+        extended_fieldnames: List[str],
+        encoding: str,
+        processing_logger,
+    ) -> Tuple[bool, bool]:
+        """
+        Process a single row and persist the resulting artifact entry.
+
+        Returns:
+            Tuple of (row_succeeded, should_continue)
+        """
+        donation_data_row = None
+        response_success_create_donation = False
+        response_success_create_person = False
+        message = ""
+        person_id = None
+
+        is_valid, error_message = donation_class.validate_row(row)
+        if not is_valid:
+            processing_logger.error(f"Invalid row data: {error_message}")
+            self._record_failed_row(fail_filename, row, extended_fieldnames, encoding, error_message)
+            return False, True
+
+        try:
+            donation_data_row = self._create_donation_mapper(
+                donation_class,
+                row,
+                plugin_bundle,
+                adapter_kwargs,
+            )
+        except Exception as e:
+            processing_logger.error(f"Error creating donation data object: {str(e)}", exc_info=True)
+            self._record_failed_row(
+                fail_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                f"Error creating donation data: {str(e)}",
+            )
+            return False, True
+
+        self._initialize_output_fields(row)
+
+        if donation_data_row.data.get("_skip_row"):
+            skip_reason = donation_data_row.data.get("_skip_reason", "Marked ineligible by plugin")
+            processing_logger.warning(f"Donation not eligible: {skip_reason}")
+            self._record_failed_row(
+                fail_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                f"Not eligible: {skip_reason}",
+            )
+            return False, True
+
+        try:
+            self._ensure_api_clients_ready()
+            (
+                person_id,
+                response_success_get_personid_by_email,
+                message,
+                people_data,
+                donation_data,
+            ) = self._resolve_person_and_payloads(
+                donation_data_row,
+                source_type_lower,
+                plugin_bundle=plugin_bundle,
+            )
+            processing_logger.info(
+                f"📥 DONATION: {donation_data.get('check_number', 'N/A')} | ${donation_data.get('amount_in_cents', 0)/100:.2f} | {donation_data.get('email', 'N/A')}"
+            )
+
+            person_id, response_success_create_person, message = self._ensure_person_record(
+                person_id,
+                response_success_get_personid_by_email,
+                people_data,
+            )
+
+            if response_success_get_personid_by_email:
+                processing_logger.info(f"👤 PERSON: Found existing donor (ID: {person_id})")
+            else:
+                processing_logger.info(f"🫥 PERSON: ✓ Created new donor (ID: {person_id})")
+                row["NB People Create Date"] = self.now_str
+
+            donation_id, donation_existed, message = self._find_or_create_donation(
+                person_id, donation_data
+            )
+
+            if donation_existed:
+                processing_logger.info(f"💰 DONATION: Found existing donation (ID: {donation_id})")
+                message = "Donation already existed"
+            else:
+                processing_logger.info(f"💰 DONATION: ✓ Created new donation (ID: {donation_id})")
+
+            self._record_successful_row(
+                success_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                donation_id,
+                person_id,
+                message,
+                donation_existed,
+            )
+            return True, True
+
+        except (ValueError, KeyError, TypeError) as e:
+            processing_logger.error(f"❌ RECORD {row_counter} FAILED: {str(e)}")
+            should_continue = self._handle_processing_failure(
+                fail_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                donation_data_row,
+                response_success_create_person,
+                response_success_create_donation,
+                person_id,
+                message,
+            )
+            return False, should_continue
+        except Exception as e:
+            processing_logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+            self._handle_unexpected_row_failure(
+                fail_filename, row, extended_fieldnames, encoding, e
+            )
+            return False, True
+
     def process_donations(
         self,
         input_filename: str,
@@ -722,278 +989,68 @@ class DonationImportService:
         )
 
         try:
-            # Read input file content using paths system
-            processing_logger.debug(f"Reading input file: {input_filename}")
-            # Both CLI and API now use relative paths and read from app_processing directory
-            file_path = self.paths.app_processing / input_filename
-            raw_content = safe_read_text_file(file_path)
-
-            # Apply file cleanup if enabled (affects both CLI and Web App)
-            if self.config.is_cleanup_enabled():
-                processing_logger.debug(f"Applying file cleanup to {input_filename}")
-                input_content, was_modified = clean_csv_content_with_uneff(
-                    raw_content, input_filename
-                )
-
-                if was_modified:
-                    processing_logger.info(
-                        f"🧹 File cleanup applied to {input_filename}: problematic characters removed"
-                    )
-                else:
-                    processing_logger.debug(
-                        f"🧹 File cleanup checked {input_filename}: no changes needed"
-                    )
-            else:
-                processing_logger.debug(
-                    f"File cleanup disabled, processing original content for {input_filename}"
-                )
-                input_content = raw_content
-
-            # Create CSV reader from input content
-            csv_input = StringIO(input_content)
-            reader = csv.DictReader(csv_input)
-
-            # Log the field names for debugging
-            if reader.fieldnames:
-                processing_logger.debug(f"CSV field names: {reader.fieldnames}")
-                # Add detailed logging of field names to diagnose case sensitivity issues
-                processing_logger.debug(
-                    f"CSV field names with case preserved: {[field for field in reader.fieldnames]}"
-                )
-            else:
-                processing_logger.error(f"No field names found in CSV file: {input_filename}")
-                if progress_callback:
-                    progress_callback(0, "Error: No field names found in CSV file")
+            prepared_import = self._prepare_import_rows(
+                input_filename,
+                source_type,
+                success_filename,
+                fail_filename,
+                encoding,
+                processing_logger,
+                progress_callback,
+            )
+            if prepared_import is None:
                 return 0, 0
 
-            reader_rows = list(reader)
-            reader_row_count = len(reader_rows)
+            (
+                reader_rows,
+                reader_row_count,
+                extended_fieldnames,
+                source_type_lower,
+                donation_class,
+                adapter_kwargs,
+                plugin_bundle,
+            ) = prepared_import
 
-            processing_logger.debug(f"Found {reader_row_count} rows in CSV file")
-
-            if reader_row_count == 0:
-                processing_logger.warning(f"No data rows found in file: {input_filename}")
-                if progress_callback:
-                    progress_callback(100, "No data rows found in file")
-                return 0, 0
-
-            # Get field names from reader
-            fieldnames = reader.fieldnames
-            extended_fieldnames = fieldnames + [
-                "NB Donation ID",
-                "NB People ID",
-                "NB People Create Date",
-                "NB Error Message",
-            ]
-
-            # Initialize output files with headers - use output file type for writing
-            self._initialize_output_file(success_filename, extended_fieldnames, encoding)
-            self._initialize_output_file(fail_filename, extended_fieldnames, encoding)
-
-            # Set counters
             success_count = 0
             fail_count = 0
             row_counter = 0
 
-            try:
-                source_type_lower, donation_class, adapter_kwargs, plugin_bundle = (
-                    self._resolve_import_adapter(source_type)
-                )
-            except ValueError as e:
-                processing_logger.error(f"Unsupported source type: {source_type}")
-                if progress_callback:
-                    progress_callback(0, f"Error: Unsupported source type {source_type}")
-                return 0, 0
-
-            # Process each donation row
             for row in reader_rows:
-                try:
-                    # Log the current row being processed and the total number of rows
-                    row_counter += 1
-                    progress_percentage = ((row_counter - 1) / reader_row_count) * 100
-                    processing_logger.info(f"\n{'─'*60}")
-                    processing_logger.info(
-                        f"PROCESSING RECORD {row_counter} of {reader_row_count}. {progress_percentage:.0f}% complete"
-                    )
-                    processing_logger.info(
-                        f"Running totals: ✓ {success_count} success, ✗ {fail_count} failed"
-                    )
-                    processing_logger.info(f"{'─'*60}")
+                row_counter += 1
+                self._report_row_progress(
+                    source_type,
+                    row,
+                    row_counter,
+                    reader_row_count,
+                    success_count,
+                    fail_count,
+                    processing_logger,
+                    progress_callback,
+                )
 
-                    # Report progress if callback is provided
-                    if progress_callback:
-                        progress_callback(
-                            progress_percentage,
-                            f"Processing row {row_counter} of {reader_row_count}",
-                            success_count,
-                            fail_count,
-                            reader_row_count,
-                        )
+                row_succeeded, should_continue = self._process_single_row(
+                row,
+                row_counter,
+                source_type_lower,
+                donation_class,
+                adapter_kwargs,
+                    plugin_bundle,
+                    success_filename,
+                    fail_filename,
+                    extended_fieldnames,
+                    encoding,
+                    processing_logger,
+                )
 
-                    # Add debug logging for the first row's keys
-                    if row_counter == 1:
-                        processing_logger.debug(
-                            f"First row keys for {source_type}: {list(row.keys())}"
-                        )
-
-                    # Validate the row
-                    is_valid, error_message = donation_class.validate_row(row)
-                    if not is_valid:
-                        processing_logger.error(f"Invalid row data: {error_message}")
-                        self._record_failed_row(
-                            fail_filename, row, extended_fieldnames, encoding, error_message
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Create the donation data object with job context and custom field detection
-                    try:
-                        donation_data_row = self._create_donation_mapper(
-                            donation_class,
-                            row,
-                            plugin_bundle,
-                            adapter_kwargs,
-                        )
-                    except Exception as e:
-                        processing_logger.error(
-                            f"Error creating donation data object: {str(e)}", exc_info=True
-                        )
-                        self._record_failed_row(
-                            fail_filename,
-                            row,
-                            extended_fieldnames,
-                            encoding,
-                            f"Error creating donation data: {str(e)}",
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Initialize output fields
-                    self._initialize_output_fields(row)
-
-                    # Set response flags to False
-                    response_success_create_donation = False
-                    response_success_create_person = False
-                    message = ""
-
-
-                    # Check eligibility - plugins set _skip_row flag for ineligible donations
-                    if donation_data_row.data.get("_skip_row"):
-                        skip_reason = donation_data_row.data.get("_skip_reason", "Marked ineligible by plugin")
-                        processing_logger.warning(
-                            f"Donation not eligible: {skip_reason}"
-                        )
-                        self._record_failed_row(
-                            fail_filename,
-                            row,
-                            extended_fieldnames,
-                            encoding,
-                            f"Not eligible: {skip_reason}",
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Check if API clients are initialized
-                    self._ensure_api_clients_ready()
-
-                    # Try to find the person using plugin or parser-specific lookup logic
-                    try:
-                        (
-                            person_id,
-                            response_success_get_personid_by_email,
-                            message,
-                            people_data,
-                            donation_data,
-                        ) = self._resolve_person_and_payloads(
-                            donation_data_row,
-                            source_type_lower,
-                            plugin_bundle=plugin_bundle,
-                        )
-                    except ValueError as e:
-                        self._record_failed_row(
-                            fail_filename, row, extended_fieldnames, encoding, str(e)
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Start processing the donation
-                    processing_logger.info(
-                        f"📥 DONATION: {donation_data.get('check_number', 'N/A')} | ${donation_data.get('amount_in_cents', 0)/100:.2f} | {donation_data.get('email', 'N/A')}"
-                    )
-
-                    # If person not found, create a new person record
-                    person_id, response_success_create_person, message = self._ensure_person_record(
-                        person_id,
-                        response_success_get_personid_by_email,
-                        people_data,
-                    )
-
-                    # Log person status
-                    if response_success_get_personid_by_email:
-                        processing_logger.info(f"👤 PERSON: Found existing donor (ID: {person_id})")
-                    else:
-                        processing_logger.info(f"🫥 PERSON: ✓ Created new donor (ID: {person_id})")
-                        # Record creation date
-                        row["NB People Create Date"] = self.now_str
-
-                    # Check if donation already exists
-                    donation_id, response_success_get_donationid_by_params, message = (
-                        self._find_or_create_donation(person_id, donation_data)
-                    )
-                    response_success_create_donation = not response_success_get_donationid_by_params
-
-                    # Log donation status
-                    if response_success_get_donationid_by_params:
-                        processing_logger.info(
-                            f"💰 DONATION: Found existing donation (ID: {donation_id})"
-                        )
-                        message = "Donation already existed"
-                    else:
-                        processing_logger.info(
-                            f"💰 DONATION: ✓ Created new donation (ID: {donation_id})"
-                        )
-
-                    # Record IDs in the output row
-                    self._record_successful_row(
-                        success_filename,
-                        row,
-                        extended_fieldnames,
-                        encoding,
-                        donation_id,
-                        person_id,
-                        message,
-                        response_success_get_donationid_by_params,
-                    )
+                if row_succeeded:
                     success_count += 1
                     processing_logger.info(f"✅ RECORD {row_counter} COMPLETED SUCCESSFULLY")
                     processing_logger.info(f"{'═'*60}")
-
-                except (ValueError, KeyError, TypeError) as e:
+                else:
                     fail_count += 1
-                    processing_logger.error(f"❌ RECORD {row_counter} FAILED: {str(e)}")
                     processing_logger.info(f"{'═'*60}")
-
-                    should_continue = self._handle_processing_failure(
-                        fail_filename,
-                        row,
-                        extended_fieldnames,
-                        encoding,
-                        donation_data_row if "donation_data_row" in locals() else None,
-                        response_success_create_person,
-                        response_success_create_donation,
-                        person_id if "person_id" in locals() else None,
-                        message,
-                    )
                     if not should_continue:
                         break
-
-                except Exception as e:
-                    # Catch broader exceptions
-                    fail_count += 1
-                    processing_logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-                    self._handle_unexpected_row_failure(
-                        fail_filename, row, extended_fieldnames, encoding, e
-                    )
 
             # Final progress update
             if progress_callback:

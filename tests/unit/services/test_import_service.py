@@ -339,3 +339,69 @@ class TestDonationImportServiceSimple:
 
                 assert row["NB Error Message"] == "Unexpected error: boom"
                 mock_append.assert_called_once()
+
+    def test_prepare_import_rows_returns_none_when_csv_has_no_rows(self, mock_config_provider):
+        """Test import preparation stops cleanly on empty CSV content."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_paths.app_processing = Mock()
+                mock_paths.app_processing.__truediv__ = Mock(return_value="ignored.csv")
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.config.is_cleanup_enabled = Mock(return_value=False)
+                progress_callback = Mock()
+
+                with patch('cdflow_cli.services.import_service.safe_read_text_file', return_value="Email\n"):
+                    prepared = service._prepare_import_rows(
+                        "ignored.csv",
+                        "paypal",
+                        "success.csv",
+                        "fail.csv",
+                        "utf-8",
+                        Mock(),
+                        progress_callback,
+                    )
+
+                assert prepared is None
+                progress_callback.assert_called_once_with(100, "No data rows found in file")
+
+    def test_process_single_row_returns_failure_for_invalid_row(self, mock_config_provider):
+        """Test single-row processing short-circuits invalid rows."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                donation_class = Mock()
+                donation_class.validate_row.return_value = (False, "bad row")
+                row = {"Email": "bad@example.com"}
+
+                with patch.object(service, "_record_failed_row") as mock_record_failed:
+                    row_succeeded, should_continue = service._process_single_row(
+                        row,
+                        1,
+                        "paypal",
+                        donation_class,
+                        {},
+                        PluginBundle(
+                            adapter="paypal",
+                            all_plugins=[],
+                            by_type={
+                                "row_transformer": [],
+                                "field_processor": [],
+                                "donation_validator": [],
+                                "person_lookup": [],
+                            },
+                        ),
+                        "success.csv",
+                        "fail.csv",
+                        ["Email", "NB Error Message"],
+                        "utf-8",
+                        Mock(),
+                    )
+
+                assert (row_succeeded, should_continue) == (False, True)
+                mock_record_failed.assert_called_once()
