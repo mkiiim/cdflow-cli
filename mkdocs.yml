@@ -4,6 +4,18 @@ site_name: cdflow CLI Docs
 hooks:
   - mkdocs_hooks.py
 
+theme:
+  name: material
+  font: false
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: black
+      accent: black
+
 extra_css:
   - css/typography.css
 
@@ -11,12 +23,10 @@ markdown_extensions:
   - fenced_code
   - codehilite
   - pymdownx.superfences
-
-# theme:
-#   name: material
-#   font:
-#     text: Roboto
-#     code: Fira Code
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
 
 nav:
   - Home: index.md

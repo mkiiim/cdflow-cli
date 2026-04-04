@@ -1,4 +1,26 @@
-# Cæstudy DonationFlow CLI
+<div class="df-hero">
+  <div class="df-hero__eyebrow">Drawing No. DF-001 · CLI Import Workflow</div>
+  <h1>Cæstudy DonationFlow CLI</h1>
+  <p class="df-hero__lede">
+    A command-line bridge for importing external donation data into NationBuilder with auditable output,
+    source-specific adapters, and safe rollback support.
+  </p>
+  <div class="df-rule"></div>
+  <div class="df-grid df-grid--3">
+    <div class="df-panel">
+      <div class="df-panel__label">Purpose</div>
+      <p>Move CanadaHelps and PayPal exports into NationBuilder without rebuilding your upstream payment workflow.</p>
+    </div>
+    <div class="df-panel">
+      <div class="df-panel__label">Architecture</div>
+      <p>Adapters map source exports, plugins encode organization rules, and job artifacts preserve an audit trail.</p>
+    </div>
+    <div class="df-panel">
+      <div class="df-panel__label">Operational Posture</div>
+      <p>Verbose logging, success and fail CSVs, and rollback tooling make import runs inspectable rather than opaque.</p>
+    </div>
+  </div>
+</div>
 
 DonationFlow CLI is a command-line tool for importing donation data from external sources like CanadaHelps and PayPal into your NationBuilder account. It is designed to be a bridge for organizations that use payment processors not natively integrated with NationBuilder, or for those migrating from other CRM platforms.
 
@@ -6,13 +28,26 @@ DonationFlow CLI is extensible to other payment processor sources through an exi
 
 DonationFlow CLI was originally developed to help a non-profit charitable organization successfully migrate their donation data from CiviCRM and integrate their existing PayPal and CanadaHelps workflows with NationBuilder.
 
-## Key Features
+## System Profile
 
-- **Import from External Sources:** Import donation data from CanadaHelps and PayPal CSV exports.
-- **Extensible Design:** The tool is designed to be adaptable to other payment platform sources, includes a generic adapter, and is extensible with plugins.
-- **Detailed Logging:** Comprehensive logging of every import job operation, for easy troubleshooting.
-- **Auditing:** Job files provide detailed audit trail for each imported donation record.
-- **Rollback Capable:** A separate command allows you to safely rollback donation import jobs (deleting the imported transaction(s) from NationBuilder) if needed.
+<div class="df-grid df-grid--2">
+  <div class="df-sheet">
+    <div class="df-sheet__label">Core Capabilities</div>
+    <ul>
+      <li><strong>Import from External Sources:</strong> Import donation data from CanadaHelps and PayPal CSV exports.</li>
+      <li><strong>Extensible Design:</strong> Adapt to other payment platforms using the generic adapter and plugin hooks.</li>
+      <li><strong>Detailed Logging:</strong> Capture every import job operation for troubleshooting and auditing.</li>
+      <li><strong>Rollback Capable:</strong> Remove imported transactions when a run needs to be reversed.</li>
+    </ul>
+  </div>
+  <div class="df-sheet">
+    <div class="df-sheet__label">Typical Use Case</div>
+    <p>
+      Use DonationFlow when your fundraising data originates outside NationBuilder but needs to land there with
+      repeatable transforms, deterministic outputs, and a paper trail that operations staff can review later.
+    </p>
+  </div>
+</div>
 
 ## Prerequisites
 
@@ -60,7 +95,7 @@ For development installation, please see the [Contribution Guide](contributing.m
     ### Execute the script using your `.env` file as the parameter
 
     ```bash
-    ./load-secrets.sh ~/.env/nb_local.env
+    source ./load-secrets.sh ~/.env/nb_local.env
     ```
 
 3.  **Update the import configuration:** In your configuration file (e.g., `local.yaml`), update the `cli_import` section to point to your CSV file(s).
@@ -101,7 +136,7 @@ For development installation, please see the [Contribution Guide](contributing.m
 
 ## Documentation
 
-For more detailed information on configuration, usage, and troubleshooting, please see our full documentation in the [`/docs`](docs) directory.
+For more detailed information on configuration, usage, and troubleshooting, please see our full documentation in the repo `/docs` directory.
 
 ## Support
 
