@@ -418,7 +418,7 @@ class ConfigProvider:
                                 logger.debug(f"Loaded section '{section_name}' into {target_scope}")
 
                 # IMPORT SETTINGS - special handling for source type detection
-                # First check for new cli_import structure
+                # Supported structure: cli_import
                 if "cli_import" in yaml_config:
                     cli_import = yaml_config["cli_import"]
 
@@ -436,23 +436,18 @@ class ConfigProvider:
                     # Log additional cli_import settings
                     if "job_cleanup" in cli_import:
                         logger.debug(f"CLI job cleanup: {cli_import['job_cleanup']}")
-                # Fallback to old structure for backward compatibility
                 elif "canadahelps" in yaml_config and yaml_config.get("canadahelps"):
                     input_file = yaml_config["canadahelps"].get("input_file")
                     if input_file:
                         logger.warning(
-                            "using legacy config import shape 'canadahelps.input_file'; migrate to cli_import.type/file"
+                            "unsupported legacy config import shape 'canadahelps.input_file'; use cli_import.type/file"
                         )
-                        self.import_settings["source_type"] = "canadahelps"
-                        self.import_settings["input_file"] = input_file
                 elif "paypal" in yaml_config and yaml_config.get("paypal"):
                     input_file = yaml_config["paypal"].get("input_file")
                     if input_file:
                         logger.warning(
-                            "using legacy config import shape 'paypal.input_file'; migrate to cli_import.type/file"
+                            "unsupported legacy config import shape 'paypal.input_file'; use cli_import.type/file"
                         )
-                        self.import_settings["source_type"] = "paypal"
-                        self.import_settings["input_file"] = input_file
 
                 # STORAGE SETTINGS - process storage configuration
                 if "storage" in yaml_config:

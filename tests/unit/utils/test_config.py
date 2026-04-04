@@ -678,8 +678,8 @@ nationbuilder:
         assert all(results)
         assert len(results) == 30  # 3 threads × 10 operations each
 
-    def test_legacy_import_shape_logs_warning(self, temp_dir, caplog):
-        """Test legacy adapter input_file config shape emits a migration warning."""
+    def test_legacy_import_shape_is_ignored_with_warning(self, temp_dir, caplog):
+        """Test legacy adapter input_file config shape no longer populates import settings."""
         legacy_config = temp_dir / 'legacy.yaml'
         legacy_config.write_text(
             yaml.dump(
@@ -693,6 +693,5 @@ nationbuilder:
 
         provider = ConfigProvider(str(legacy_config))
 
-        assert provider.import_settings["source_type"] == "paypal"
-        assert provider.import_settings["input_file"] == "legacy_paypal.csv"
-        assert "using legacy config import shape 'paypal.input_file'" in caplog.text
+        assert provider.import_settings == {}
+        assert "unsupported legacy config import shape 'paypal.input_file'" in caplog.text
