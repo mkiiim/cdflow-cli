@@ -64,9 +64,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'init']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
-            # Check that sys.argv was reconstructed correctly
-            assert sys.argv == ["cdflow-init"]
+            mock_init_main.assert_called_once_with([])
     
     @patch('cdflow_cli.cli.main.init_main')
     def test_main_init_command_with_config_dir(self, mock_init_main):
@@ -74,10 +72,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'init', '--config-dir', '/custom/path']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
-            # Check sys.argv reconstruction includes config-dir
-            expected_argv = ["cdflow-init", "--config-dir", "/custom/path"]
-            assert sys.argv == expected_argv
+            mock_init_main.assert_called_once_with(["--config-dir", "/custom/path"])
     
     @patch('cdflow_cli.cli.main.init_main')
     def test_main_init_command_with_force_and_logo(self, mock_init_main):
@@ -85,10 +80,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'init', '--force', '--org-logo', 'logo.png']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
-            # Check sys.argv reconstruction includes all options
-            expected_argv = ["cdflow-init", "--force", "--org-logo", "logo.png"]
-            assert sys.argv == expected_argv
+            mock_init_main.assert_called_once_with(["--force", "--org-logo", "logo.png"])
     
     @patch('cdflow_cli.cli.main.import_main')
     def test_main_import_command_basic(self, mock_import_main):
@@ -96,10 +88,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'import']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            # Check default sys.argv reconstruction
-            expected_argv = ["cdflow-import", "--config", "config.yaml", "--log-level", "INFO"]
-            assert sys.argv == expected_argv
+            mock_import_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
     
     @patch('cdflow_cli.cli.main.import_main')
     def test_main_import_command_with_custom_config_and_log_level(self, mock_import_main):
@@ -107,9 +96,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'import', '--config', 'custom.yaml', '--log-level', 'DEBUG']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            expected_argv = ["cdflow-import", "--config", "custom.yaml", "--log-level", "DEBUG"]
-            assert sys.argv == expected_argv
+            mock_import_main.assert_called_once_with(["--config", "custom.yaml", "--log-level", "DEBUG"])
     
     @patch('cdflow_cli.cli.main.import_main')
     def test_main_import_command_with_type_and_file(self, mock_import_main):
@@ -117,12 +104,9 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'import', '--type', 'canadahelps', '--file', 'donations.csv']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            expected_argv = [
-                "cdflow-import", "--config", "config.yaml", "--log-level", "INFO", 
-                "--type", "canadahelps", "--file", "donations.csv"
-            ]
-            assert sys.argv == expected_argv
+            mock_import_main.assert_called_once_with(
+                ["--config", "config.yaml", "--log-level", "INFO", "--type", "canadahelps", "--file", "donations.csv"]
+            )
     
     @patch('cdflow_cli.cli.main.rollback_main')
     def test_main_rollback_command_basic(self, mock_rollback_main):
@@ -130,9 +114,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'rollback']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_rollback_main.assert_called_once()
-            expected_argv = ["cdflow-rollback", "--config", "config.yaml", "--log-level", "INFO"]
-            assert sys.argv == expected_argv
+            mock_rollback_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
     
     @patch('cdflow_cli.cli.main.rollback_main')
     def test_main_rollback_command_with_custom_config(self, mock_rollback_main):
@@ -140,9 +122,7 @@ class TestMainSubcommandDispatch:
         test_args = ['cdflow', 'rollback', '--config', 'rollback.yaml', '--log-level', 'ERROR']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_rollback_main.assert_called_once()
-            expected_argv = ["cdflow-rollback", "--config", "rollback.yaml", "--log-level", "ERROR"]
-            assert sys.argv == expected_argv
+            mock_rollback_main.assert_called_once_with(["--config", "rollback.yaml", "--log-level", "ERROR"])
 
 
 class TestMainValidation:
@@ -201,14 +181,9 @@ class TestMainEdgeCases:
         ]
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
-            expected_argv = [
-                "cdflow-init", 
-                "--config-dir", "/custom/dir",
-                "--force",
-                "--org-logo", "/path/to/logo.png"
-            ]
-            assert sys.argv == expected_argv
+            mock_init_main.assert_called_once_with(
+                ["--config-dir", "/custom/dir", "--force", "--org-logo", "/path/to/logo.png"]
+            )
     
     def test_main_unknown_command(self):
         """Test that unknown commands show help and exit."""
@@ -244,12 +219,11 @@ class TestMainIntegration:
         ]
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            expected_argv = [
-                "cdflow-import", 
-                "--config", "paypal_config.yaml", 
-                "--log-level", "WARNING",
-                "--type", "paypal", 
-                "--file", "paypal_data.csv"
-            ]
-            assert sys.argv == expected_argv
+            mock_import_main.assert_called_once_with(
+                [
+                    "--config", "paypal_config.yaml",
+                    "--log-level", "WARNING",
+                    "--type", "paypal",
+                    "--file", "paypal_data.csv",
+                ]
+            )

@@ -586,7 +586,7 @@ def run_init(
 
 
 
-def main():
+def main(argv=None):
     """Main entry point for cdflow init command."""
     from ..utils.config_paths import get_default_config_dir
 
@@ -608,7 +608,7 @@ def main():
         help="Overwrite existing config files and logos without prompting",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Use smart default config directory if not specified
     config_dir = args.config_dir

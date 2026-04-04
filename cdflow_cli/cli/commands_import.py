@@ -106,7 +106,7 @@ def initialize_logging(
         return logging_provider, None
 
 
-def parse_arguments() -> argparse.Namespace:
+def parse_arguments(argv=None) -> argparse.Namespace:
     """
     Parse command line arguments.
 
@@ -132,7 +132,7 @@ def parse_arguments() -> argparse.Namespace:
         help="Import source type (overrides config file)",
     )
     parser.add_argument("--file", help="CSV file path to import (overrides config file)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     return args
 
 
@@ -622,10 +622,10 @@ def run_cli_with_jobs(job_manager, config: ConfigProvider, oauth_tokens: Dict[st
         return 1
 
 
-def main():
+def main(argv=None):
     """Main entry point for import console script."""
     # Parse config file path and log level from command line arguments
-    args = parse_arguments()
+    args = parse_arguments(argv)
     config_path, log_level = args.config, args.log_level
 
     # Apply smart config path resolution

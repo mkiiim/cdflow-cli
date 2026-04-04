@@ -56,11 +56,11 @@ class TestCLIContracts:
             ):
                 main()
 
-        mock_import_main.assert_called_once_with()
+        mock_import_main.assert_called_once()
 
     def test_rollback_uses_public_command_path(self):
         with patch("cdflow_cli.cli.main.rollback_main") as mock_rollback_main:
             with patch.object(sys, "argv", ["cdflow", "rollback"]):
                 main()
 
-        mock_rollback_main.assert_called_once_with()
+        mock_rollback_main.assert_called_once()

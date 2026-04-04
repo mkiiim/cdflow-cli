@@ -40,8 +40,7 @@ class TestSubparserDefaults:
         test_args = ['cdflow', 'import']
         with patch.object(sys, 'argv', test_args):
             main()
-            # Verify sys.argv contains the default config value
-            assert "config.yaml" in sys.argv
+            mock_import_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
             
     @patch('cdflow_cli.cli.main.import_main')
     def test_import_default_log_level_value(self, mock_import_main):
@@ -49,8 +48,7 @@ class TestSubparserDefaults:
         test_args = ['cdflow', 'import']
         with patch.object(sys, 'argv', test_args):
             main()
-            # Verify sys.argv contains the default log level
-            assert "INFO" in sys.argv
+            mock_import_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
             
     @patch('cdflow_cli.cli.main.rollback_main')
     def test_rollback_default_config_value(self, mock_rollback_main):
@@ -58,7 +56,7 @@ class TestSubparserDefaults:
         test_args = ['cdflow', 'rollback']
         with patch.object(sys, 'argv', test_args):
             main()
-            assert "config.yaml" in sys.argv
+            mock_rollback_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
             
     @patch('cdflow_cli.cli.main.rollback_main')
     def test_rollback_default_log_level_value(self, mock_rollback_main):
@@ -66,7 +64,7 @@ class TestSubparserDefaults:
         test_args = ['cdflow', 'rollback']
         with patch.object(sys, 'argv', test_args):
             main()
-            assert "INFO" in sys.argv
+            mock_rollback_main.assert_called_once_with(["--config", "config.yaml", "--log-level", "INFO"])
 
 
 class TestLogLevelChoices:
@@ -79,8 +77,7 @@ class TestLogLevelChoices:
         test_args = ['cdflow', 'import', '--log-level', log_level]
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            assert log_level in sys.argv
+            mock_import_main.assert_called_once_with(["--config", "config.yaml", "--log-level", log_level])
             
     @patch('cdflow_cli.cli.main.rollback_main')
     @pytest.mark.parametrize("log_level", ["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR"])
@@ -89,8 +86,7 @@ class TestLogLevelChoices:
         test_args = ['cdflow', 'rollback', '--log-level', log_level]
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_rollback_main.assert_called_once()
-            assert log_level in sys.argv
+            mock_rollback_main.assert_called_once_with(["--config", "config.yaml", "--log-level", log_level])
 
 
 class TestTypeChoices:
@@ -103,8 +99,9 @@ class TestTypeChoices:
         test_args = ['cdflow', 'import', '--type', import_type, '--file', 'test.csv']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            assert import_type in sys.argv
+            mock_import_main.assert_called_once_with(
+                ["--config", "config.yaml", "--log-level", "INFO", "--type", import_type, "--file", "test.csv"]
+            )
 
 
 class TestValidationEdgeCases:
@@ -179,23 +176,20 @@ class TestArgumentGetattr:
             mock_import_main.assert_called_once()
 
 
-class TestSysArgvReconstruction:
-    """Test the exact sys.argv reconstruction behavior."""
+class TestSubcommandArgumentPassing:
+    """Test the exact argument lists passed to subcommand entrypoints."""
     
     @patch('cdflow_cli.cli.main.init_main')
     def test_init_sys_argv_order_with_multiple_args(self, mock_init_main):
-        """Test exact order of sys.argv reconstruction for init."""
+        """Test exact order of init argument passing."""
         test_args = ['cdflow', 'init', '--org-logo', 'logo.png', '--config-dir', '/path', '--force']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
-            # Test that the order matches the code: config-dir, force, org-logo
-            expected = ["cdflow-init", "--config-dir", "/path", "--force", "--org-logo", "logo.png"]
-            assert sys.argv == expected
+            mock_init_main.assert_called_once_with(["--config-dir", "/path", "--force", "--org-logo", "logo.png"])
             
     @patch('cdflow_cli.cli.main.import_main')
     def test_import_sys_argv_order_with_all_args(self, mock_import_main):
-        """Test exact order of sys.argv reconstruction for import."""
+        """Test exact order of import argument passing."""
         test_args = [
             'cdflow', 'import', 
             '--config', 'custom.yaml',
@@ -205,13 +199,6 @@ class TestSysArgvReconstruction:
         ]
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
-            # Test that the order matches the code: config, log-level, then type, file
-            expected = [
-                "cdflow-import", 
-                "--config", "custom.yaml",
-                "--log-level", "DEBUG",
-                "--type", "paypal",
-                "--file", "data.csv"
-            ]
-            assert sys.argv == expected
+            mock_import_main.assert_called_once_with(
+                ["--config", "custom.yaml", "--log-level", "DEBUG", "--type", "paypal", "--file", "data.csv"]
+            )

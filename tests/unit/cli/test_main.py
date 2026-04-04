@@ -47,7 +47,7 @@ class TestMainCLI:
         test_args = ['cdflow', 'init']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_init_main.assert_called_once()
+            mock_init_main.assert_called_once_with([])
     
     @patch('cdflow_cli.cli.main.import_main')
     def test_main_import_command(self, mock_import_main):
@@ -55,7 +55,7 @@ class TestMainCLI:
         test_args = ['cdflow', 'import', '--config', 'test.yaml']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
+            mock_import_main.assert_called_once_with(['--config', 'test.yaml', '--log-level', 'INFO'])
     
     @patch('cdflow_cli.cli.main.rollback_main')
     def test_main_rollback_command(self, mock_rollback_main):
@@ -63,7 +63,7 @@ class TestMainCLI:
         test_args = ['cdflow', 'rollback', '--config', 'test.yaml']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_rollback_main.assert_called_once()
+            mock_rollback_main.assert_called_once_with(['--config', 'test.yaml', '--log-level', 'INFO'])
     
     def test_import_type_file_validation(self):
         """Test that --type and --file must be used together."""
@@ -85,4 +85,6 @@ class TestMainCLI:
         test_args = ['cdflow', 'import', '--type', 'canadahelps', '--file', 'test.csv', '--config', 'config.yaml']
         with patch.object(sys, 'argv', test_args):
             main()
-            mock_import_main.assert_called_once()
+            mock_import_main.assert_called_once_with(
+                ['--config', 'config.yaml', '--log-level', 'INFO', '--type', 'canadahelps', '--file', 'test.csv']
+            )

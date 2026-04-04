@@ -447,7 +447,7 @@ def run_rollback_cli(config=None, logging_provider=None) -> int:
         return 1
 
 
-def main():
+def main(argv=None):
     """Main entry point for rollback console script."""
     import argparse
 
@@ -461,7 +461,7 @@ def main():
         choices=["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR", "CRITICAL"],
         help="Logging level",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Apply smart config path resolution
     from ..utils.config_paths import resolve_config_path

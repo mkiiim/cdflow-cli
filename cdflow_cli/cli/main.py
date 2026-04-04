@@ -124,28 +124,24 @@ Examples:
             parser.error("--type and --file must be used together or not at all")
 
     if args.command == "init":
-        # Reconstruct sys.argv for the init command
-        sys.argv = ["cdflow-init"]
+        subcommand_args = []
         if args.config_dir:
-            sys.argv.extend(["--config-dir", args.config_dir])
+            subcommand_args.extend(["--config-dir", args.config_dir])
         if args.force:
-            sys.argv.append("--force")
+            subcommand_args.append("--force")
         if args.org_logo:
-            sys.argv.extend(["--org-logo", args.org_logo])
-        init_main()
+            subcommand_args.extend(["--org-logo", args.org_logo])
+        init_main(subcommand_args)
     elif args.command == "import":
-        # Reconstruct sys.argv for the import command
-        sys_args = ["cdflow-import", "--config", args.config, "--log-level", args.log_level]
+        subcommand_args = ["--config", args.config, "--log-level", args.log_level]
         if getattr(args, "type", None):
-            sys_args.extend(["--type", args.type])
+            subcommand_args.extend(["--type", args.type])
         if getattr(args, "file", None):
-            sys_args.extend(["--file", args.file])
-        sys.argv = sys_args
-        import_main()
+            subcommand_args.extend(["--file", args.file])
+        import_main(subcommand_args)
     elif args.command == "rollback":
-        # Reconstruct sys.argv for the rollback command
-        sys.argv = ["cdflow-rollback", "--config", args.config, "--log-level", args.log_level]
-        rollback_main()
+        subcommand_args = ["--config", args.config, "--log-level", args.log_level]
+        rollback_main(subcommand_args)
     else:
         parser.print_help()
         sys.exit(1)
