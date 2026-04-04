@@ -14,7 +14,6 @@ import csv
 import logging
 import argparse
 import datetime
-import chardet
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 from io import StringIO
@@ -22,6 +21,7 @@ from io import StringIO
 from cdflow_cli.utils import start_fresh_output, clear_screen
 
 from .command_bootstrap import STANDARD_LOG_LEVEL_CHOICES, initialize_cli_components
+from .file_encoding import detect_file_encoding
 from ..services.rollback_service import DonationRollbackService
 from ..utils.menu import FileSelectionMenu
 from ..utils.file_utils import safe_read_text_file
@@ -51,11 +51,7 @@ def get_encoding(file_path: str, paths=None) -> Tuple[str, float]:
         else:
             full_file_path = Path(file_path)
 
-        with open(full_file_path, "rb") as f:
-            sample = f.read(10000)
-
-        result = chardet.detect(sample)
-        return result["encoding"], result["confidence"]
+        return detect_file_encoding(full_file_path)
     except Exception as e:
         logger.error(f"Error detecting file encoding: {str(e)}")
         return "utf-8", 0.0  # Default to UTF-8 with low confidence

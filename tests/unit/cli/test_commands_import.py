@@ -31,14 +31,6 @@ def session_temp_dir():
         yield Path(temp_dir)
 
 
-@pytest.fixture(scope="class")
-def mock_chardet():
-    """Create a reusable chardet mock."""
-    with patch('chardet.detect') as mock_detect:
-        mock_detect.return_value = {'encoding': 'utf-8', 'confidence': 0.99}
-        yield mock_detect
-
-
 @pytest.fixture
 def base_mock_config():
     """Create a basic mock config object."""
@@ -87,40 +79,38 @@ class TestGetEncoding:
         mock_file.read.return_value = b'test content'
         return mock_file
     
-    def test_get_encoding_cli_usage(self, mock_chardet, mock_paths, mock_file_content):
+    @patch('cdflow_cli.cli.commands_import.detect_file_encoding')
+    def test_get_encoding_cli_usage(self, mock_detect_encoding, mock_paths, mock_file_content):
         """Test encoding detection for CLI usage."""
-        with patch('builtins.open') as mock_open:
-            mock_open.return_value.__enter__.return_value = mock_file_content
-            
-            encoding, confidence = get_encoding('test.csv', mock_paths)
-            
-            assert encoding == 'utf-8'
-            assert confidence == 0.99
-            mock_open.assert_called_once_with(mock_paths.cli_source / 'test.csv', 'rb')
+        mock_detect_encoding.return_value = ('utf-8', 0.99)
+
+        encoding, confidence = get_encoding('test.csv', mock_paths)
+
+        assert encoding == 'utf-8'
+        assert confidence == 0.99
+        mock_detect_encoding.assert_called_once_with(mock_paths.cli_source / 'test.csv')
     
-    def test_get_encoding_api_usage(self, mock_paths, mock_file_content):
+    @patch('cdflow_cli.cli.commands_import.detect_file_encoding')
+    def test_get_encoding_api_usage(self, mock_detect_encoding, mock_paths, mock_file_content):
         """Test encoding detection for API usage."""
-        with patch('chardet.detect', return_value={'encoding': 'windows-1252', 'confidence': 0.85}), \
-             patch('builtins.open') as mock_open:
-            mock_open.return_value.__enter__.return_value = mock_file_content
-            
-            encoding, confidence = get_encoding('canadahelps/test.csv', mock_paths)
-            
-            assert encoding == 'windows-1252'
-            assert confidence == 0.85
-            mock_open.assert_called_once_with(mock_paths.app_processing / 'canadahelps/test.csv', 'rb')
+        mock_detect_encoding.return_value = ('windows-1252', 0.85)
+
+        encoding, confidence = get_encoding('canadahelps/test.csv', mock_paths)
+
+        assert encoding == 'windows-1252'
+        assert confidence == 0.85
+        mock_detect_encoding.assert_called_once_with(mock_paths.app_processing / 'canadahelps/test.csv')
     
-    def test_get_encoding_paypal_api_usage(self, mock_paths, mock_file_content):
+    @patch('cdflow_cli.cli.commands_import.detect_file_encoding')
+    def test_get_encoding_paypal_api_usage(self, mock_detect_encoding, mock_paths, mock_file_content):
         """Test encoding detection for PayPal API usage."""
-        with patch('chardet.detect', return_value={'encoding': 'iso-8859-1', 'confidence': 0.75}), \
-             patch('builtins.open') as mock_open:
-            mock_open.return_value.__enter__.return_value = mock_file_content
-            
-            encoding, confidence = get_encoding('paypal/transactions.csv', mock_paths)
-            
-            assert encoding == 'iso-8859-1'
-            assert confidence == 0.75
-            mock_open.assert_called_once_with(mock_paths.app_processing / 'paypal/transactions.csv', 'rb')
+        mock_detect_encoding.return_value = ('iso-8859-1', 0.75)
+
+        encoding, confidence = get_encoding('paypal/transactions.csv', mock_paths)
+
+        assert encoding == 'iso-8859-1'
+        assert confidence == 0.75
+        mock_detect_encoding.assert_called_once_with(mock_paths.app_processing / 'paypal/transactions.csv')
     
     def test_get_encoding_exception_handling(self, mock_paths, caplog):
         """Test encoding detection error handling."""

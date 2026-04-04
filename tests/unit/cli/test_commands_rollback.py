@@ -32,50 +32,38 @@ class TestGetEncoding:
         paths.output = Path('/test/output')
         return paths
     
-    @patch('chardet.detect')
-    @patch('builtins.open')
-    def test_get_encoding_absolute_path(self, mock_open, mock_detect, mock_paths):
+    @patch('cdflow_cli.cli.commands_rollback.detect_file_encoding')
+    def test_get_encoding_absolute_path(self, mock_detect_encoding, mock_paths):
         """Test encoding detection with absolute file path."""
-        mock_file = Mock()
-        mock_file.read.return_value = b'test content'
-        mock_open.return_value.__enter__.return_value = mock_file
-        mock_detect.return_value = {'encoding': 'utf-8', 'confidence': 0.99}
+        mock_detect_encoding.return_value = ('utf-8', 0.99)
         
         encoding, confidence = get_encoding('/absolute/path/test.csv', mock_paths)
         
         assert encoding == 'utf-8'
         assert confidence == 0.99
-        mock_open.assert_called_once_with(Path('/absolute/path/test.csv'), 'rb')
+        mock_detect_encoding.assert_called_once_with(Path('/absolute/path/test.csv'))
     
-    @patch('chardet.detect')
-    @patch('builtins.open')
-    def test_get_encoding_relative_path(self, mock_open, mock_detect, mock_paths):
+    @patch('cdflow_cli.cli.commands_rollback.detect_file_encoding')
+    def test_get_encoding_relative_path(self, mock_detect_encoding, mock_paths):
         """Test encoding detection with relative file path."""
-        mock_file = Mock()
-        mock_file.read.return_value = b'test content'
-        mock_open.return_value.__enter__.return_value = mock_file
-        mock_detect.return_value = {'encoding': 'windows-1252', 'confidence': 0.85}
+        mock_detect_encoding.return_value = ('windows-1252', 0.85)
         
         encoding, confidence = get_encoding('test.csv', mock_paths)
         
         assert encoding == 'windows-1252'
         assert confidence == 0.85
-        mock_open.assert_called_once_with(mock_paths.output / 'test.csv', 'rb')
+        mock_detect_encoding.assert_called_once_with(mock_paths.output / 'test.csv')
     
-    @patch('chardet.detect')
-    @patch('builtins.open')
-    def test_get_encoding_without_paths(self, mock_open, mock_detect):
+    @patch('cdflow_cli.cli.commands_rollback.detect_file_encoding')
+    def test_get_encoding_without_paths(self, mock_detect_encoding):
         """Test encoding detection without paths system."""
-        mock_file = Mock()
-        mock_file.read.return_value = b'test content'
-        mock_open.return_value.__enter__.return_value = mock_file
-        mock_detect.return_value = {'encoding': 'iso-8859-1', 'confidence': 0.75}
+        mock_detect_encoding.return_value = ('iso-8859-1', 0.75)
         
         encoding, confidence = get_encoding('test.csv', None)
         
         assert encoding == 'iso-8859-1'
         assert confidence == 0.75
-        mock_open.assert_called_once_with(Path('test.csv'), 'rb')
+        mock_detect_encoding.assert_called_once_with(Path('test.csv'))
     
     def test_get_encoding_exception_handling(self, mock_paths, caplog):
         """Test encoding detection error handling."""
