@@ -21,6 +21,7 @@ from io import StringIO
 
 from cdflow_cli.utils import start_fresh_output, clear_screen
 
+from .command_bootstrap import STANDARD_LOG_LEVEL_CHOICES, initialize_cli_components
 from ..services.rollback_service import DonationRollbackService
 from ..utils.menu import FileSelectionMenu
 from ..utils.file_utils import safe_read_text_file
@@ -458,29 +459,20 @@ def main(argv=None):
     parser.add_argument(
         "--log-level",
         default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR", "CRITICAL"],
+        choices=STANDARD_LOG_LEVEL_CHOICES,
         help="Logging level",
     )
     args = parser.parse_args(argv)
 
-    # Apply smart config path resolution
-    from ..utils.config_paths import resolve_config_path
-
-    resolved_config_path = resolve_config_path(args.config)
-
-    # Check if the configuration file exists
-    if not resolved_config_path.exists():
-        print(f"Configuration file not found: {resolved_config_path}")
+    try:
+        config, logging_provider, app_log_path = initialize_cli_components(
+            args.config,
+            args.log_level,
+            require_existing_config=True,
+        )
+    except FileNotFoundError as exc:
+        print(f"Configuration file not found: {exc}")
         return 1
-
-    config_path = str(resolved_config_path)
-
-    # Initialize components using bootstrap pattern
-    from ..utils.bootstrap import initialize_components_simplified
-
-    config, logging_provider, app_log_path = initialize_components_simplified(
-        config_path=config_path, console_log_level=args.log_level
-    )
 
     return run_rollback_cli(config, logging_provider)
 

@@ -20,6 +20,7 @@ from typing import Dict, Any, Optional, Tuple
 
 from cdflow_cli.utils import start_fresh_output, clear_screen
 
+from .command_bootstrap import STANDARD_LOG_LEVEL_CHOICES, initialize_cli_components
 from ..utils.config import ConfigProvider
 from ..utils.logging import get_logging_provider, LoggingProvider, FileLoggingProvider
 
@@ -123,7 +124,7 @@ def parse_arguments(argv=None) -> argparse.Namespace:
     parser.add_argument(
         "--log-level",
         default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR", "CRITICAL"],
+        choices=STANDARD_LOG_LEVEL_CHOICES,
         help="Logging level",
     )
     parser.add_argument(
@@ -628,17 +629,7 @@ def main(argv=None):
     args = parse_arguments(argv)
     config_path, log_level = args.config, args.log_level
 
-    # Apply smart config path resolution
-    from ..utils.config_paths import resolve_config_path
-
-    resolved_config_path = resolve_config_path(config_path)
-
-    # Initialize components with resolved config path and log level
-    from ..utils.bootstrap import initialize_components_simplified
-
-    config, logging_provider, app_log_path = initialize_components_simplified(
-        config_path=str(resolved_config_path), console_log_level=log_level
-    )
+    config, logging_provider, app_log_path = initialize_cli_components(config_path, log_level)
 
     # Apply CLI argument overrides to config if provided
     if hasattr(args, "type") and args.type:

@@ -676,54 +676,39 @@ class TestRunRollbackCli:
 class TestMainFunction:
     """Test main entry point functionality."""
     
-    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
-    @patch('cdflow_cli.utils.bootstrap.initialize_components_simplified')
+    @patch('cdflow_cli.cli.commands_rollback.initialize_cli_components')
     @patch('cdflow_cli.cli.commands_rollback.run_rollback_cli')
     @patch('argparse.ArgumentParser.parse_args')
-    def test_main_basic_execution(self, mock_parse, mock_run_cli, mock_init, mock_resolve):
+    def test_main_basic_execution(self, mock_parse, mock_run_cli, mock_initialize):
         """Test basic main function execution."""
         # Setup argument parsing
         args = Mock()
         args.config = 'config.yaml'
         args.log_level = 'INFO'
         mock_parse.return_value = args
-        
-        # Setup path resolution
-        mock_resolve.return_value = Path('/resolved/config.yaml')
-        
-        # Mock resolved path exists
-        with patch.object(Path, 'exists', return_value=True):
-            # Setup component initialization
-            mock_config = Mock()
-            mock_logging_provider = Mock()
-            mock_init.return_value = (mock_config, mock_logging_provider, '/path/to/log')
-            
-            # Setup CLI execution
-            mock_run_cli.return_value = 0
-            
-            result = main()
+        # Setup component initialization
+        mock_config = Mock()
+        mock_logging_provider = Mock()
+        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
+
+        # Setup CLI execution
+        mock_run_cli.return_value = 0
+
+        result = main()
         
         assert result == 0
-        mock_resolve.assert_called_once_with('config.yaml')
-        mock_init.assert_called_once_with(
-            config_path='/resolved/config.yaml', 
-            console_log_level='INFO'
-        )
+        mock_initialize.assert_called_once_with('config.yaml', 'INFO', require_existing_config=True)
         mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider)
     
-    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
+    @patch('cdflow_cli.cli.commands_rollback.initialize_cli_components')
     @patch('argparse.ArgumentParser.parse_args')
-    def test_main_config_file_not_found(self, mock_parse, mock_resolve, capfd):
+    def test_main_config_file_not_found(self, mock_parse, mock_initialize, capfd):
         """Test main function when config file doesn't exist."""
         args = Mock()
         args.config = 'nonexistent.yaml'
         args.log_level = 'INFO'
         mock_parse.return_value = args
-        
-        # Mock path that doesn't exist
-        mock_path = Mock()
-        mock_path.exists.return_value = False
-        mock_resolve.return_value = mock_path
+        mock_initialize.side_effect = FileNotFoundError('/resolved/nonexistent.yaml')
         
         result = main()
         
@@ -731,32 +716,24 @@ class TestMainFunction:
         captured = capfd.readouterr()
         assert "Configuration file not found" in captured.out
     
-    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
-    @patch('cdflow_cli.utils.bootstrap.initialize_components_simplified')
+    @patch('cdflow_cli.cli.commands_rollback.initialize_cli_components')
     @patch('cdflow_cli.cli.commands_rollback.run_rollback_cli')
     @patch('argparse.ArgumentParser.parse_args')
-    def test_main_with_debug_log_level(self, mock_parse, mock_run_cli, mock_init, mock_resolve):
+    def test_main_with_debug_log_level(self, mock_parse, mock_run_cli, mock_initialize):
         """Test main function with DEBUG log level."""
         args = Mock()
         args.config = 'config.yaml'
         args.log_level = 'DEBUG'
         mock_parse.return_value = args
+        mock_config = Mock()
+        mock_logging_provider = Mock()
+        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
+        mock_run_cli.return_value = 0
         
-        mock_resolve.return_value = Path('/resolved/config.yaml')
-        
-        with patch.object(Path, 'exists', return_value=True):
-            mock_config = Mock()
-            mock_logging_provider = Mock()
-            mock_init.return_value = (mock_config, mock_logging_provider, '/path/to/log')
-            mock_run_cli.return_value = 0
-            
-            result = main()
+        result = main()
         
         assert result == 0
-        mock_init.assert_called_once_with(
-            config_path='/resolved/config.yaml',
-            console_log_level='DEBUG'
-        )
+        mock_initialize.assert_called_once_with('config.yaml', 'DEBUG', require_existing_config=True)
     
     @patch('argparse.ArgumentParser.parse_args')
     def test_main_argument_parsing_choices(self, mock_parse):
@@ -768,10 +745,11 @@ class TestMainFunction:
         mock_parse.return_value = args
         
         # Just verify argument parsing works with expected choices
-        with patch('cdflow_cli.utils.config_paths.resolve_config_path') as mock_resolve:
-            mock_resolve.return_value = Path('/test/config.yaml')
-            with patch.object(Path, 'exists', return_value=False):
-                result = main()
+        with patch(
+            'cdflow_cli.cli.commands_rollback.initialize_cli_components',
+            side_effect=FileNotFoundError('/test/config.yaml'),
+        ):
+            result = main()
         
         assert result == 1  # Should fail due to missing config file
         mock_parse.assert_called_once()

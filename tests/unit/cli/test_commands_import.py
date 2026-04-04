@@ -545,11 +545,10 @@ class TestMonitorCliJob:
 class TestMainFunction:
     """Test main entry point functionality."""
     
-    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
-    @patch('cdflow_cli.utils.bootstrap.initialize_components_simplified')
+    @patch('cdflow_cli.cli.commands_import.initialize_cli_components')
     @patch('cdflow_cli.cli.commands_import.run_cli')
     @patch('cdflow_cli.cli.commands_import.parse_arguments')
-    def test_main_basic_execution(self, mock_parse, mock_run_cli, mock_init, mock_resolve):
+    def test_main_basic_execution(self, mock_parse, mock_run_cli, mock_initialize):
         """Test basic main function execution."""
         # Setup argument parsing
         args = Mock()
@@ -559,15 +558,12 @@ class TestMainFunction:
         args.file = None
         mock_parse.return_value = args
         
-        # Setup path resolution
-        mock_resolve.return_value = Path('/resolved/config.yaml')
-        
         # Setup component initialization
         mock_config = Mock()
         mock_logging_provider = Mock()
         mock_logger = Mock()
         mock_logging_provider.get_logger.return_value = mock_logger
-        mock_init.return_value = (mock_config, mock_logging_provider, '/path/to/log')
+        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
         
         # Setup CLI execution
         mock_run_cli.return_value = 0
@@ -575,15 +571,13 @@ class TestMainFunction:
         result = main()
         
         assert result == 0
-        mock_resolve.assert_called_once_with('config.yaml')
-        mock_init.assert_called_once_with(config_path='/resolved/config.yaml', console_log_level='INFO')
+        mock_initialize.assert_called_once_with('config.yaml', 'INFO')
         mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider)
     
-    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
-    @patch('cdflow_cli.utils.bootstrap.initialize_components_simplified')
+    @patch('cdflow_cli.cli.commands_import.initialize_cli_components')
     @patch('cdflow_cli.cli.commands_import.run_cli')
     @patch('cdflow_cli.cli.commands_import.parse_arguments')
-    def test_main_with_cli_overrides(self, mock_parse, mock_run_cli, mock_init, mock_resolve):
+    def test_main_with_cli_overrides(self, mock_parse, mock_run_cli, mock_initialize):
         """Test main function with CLI argument overrides."""
         # Setup argument parsing with overrides
         args = Mock()
@@ -593,15 +587,13 @@ class TestMainFunction:
         args.file = 'override.csv'
         mock_parse.return_value = args
         
-        mock_resolve.return_value = Path('/resolved/config.yaml')
-        
         # Setup component initialization
         mock_config = Mock()
         mock_config._cli_override = {}  # Make it support item assignment
         mock_logging_provider = Mock()
         mock_logger = Mock()
         mock_logging_provider.get_logger.return_value = mock_logger
-        mock_init.return_value = (mock_config, mock_logging_provider, '/path/to/log')
+        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
         
         mock_run_cli.return_value = 0
         
