@@ -1,3 +1,5 @@
+<div class="df-hero__eyebrow">cdflow-cli docs · contributing.md</div>
+
 # Contributing to DonationFlow CLI
 
 Thank you for your interest in contributing!

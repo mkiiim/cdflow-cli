@@ -1,3 +1,5 @@
+<div class="df-hero__eyebrow">cdflow-cli docs · troubleshooting.md</div>
+
 # Troubleshooting
 
 This guide provides advice on how to troubleshoot common issues with the donation import process.

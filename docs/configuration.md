@@ -1,3 +1,5 @@
+<div class="df-hero__eyebrow">cdflow-cli docs · configuration.md</div>
+
 # Configuration
 
 DonationFlow CLI is configured using a YAML configuration file and environment variables for OAuth credentials. The configuration file contains application settings while OAuth credentials are provided via environment variables for security.

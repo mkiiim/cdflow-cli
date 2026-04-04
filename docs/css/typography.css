@@ -176,6 +176,11 @@ pre,
     border-top: 1px solid var(--df-rule);
 }
 
+.df-ae {
+    border-bottom: 4px solid var(--df-ink);
+    padding-bottom: 0.04em;
+}
+
 .df-hero {
     padding: 1rem 0 2.5rem;
 }

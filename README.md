@@ -1,6 +1,6 @@
 <div class="df-hero">
-  <div class="df-hero__eyebrow">Drawing No. DF-001 · CLI Import Workflow</div>
-  <h1>Cæstudy DonationFlow CLI</h1>
+  <div class="df-hero__eyebrow">cdflow-cli docs · index.md</div>
+  <h1>c<span class="df-ae">æ</span>study. DonationFlow CLI</h1>
   <p class="df-hero__lede">
     A command-line bridge for importing external donation data into NationBuilder with auditable output,
     source-specific adapters, and safe rollback support.

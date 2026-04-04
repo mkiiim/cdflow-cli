@@ -1,3 +1,5 @@
+<div class="df-hero__eyebrow">cdflow-cli docs · plugins/overview.md</div>
+
 # DonationFlow CLI Plugin Examples
 
 This directory contains example plugins demonstrating the DonationFlow CLI plugin system.
