@@ -56,6 +56,7 @@ class CHDonationMapper(DonationMapper):
         data,
         job_context=None,
         custom_fields_available=None,
+        plugin_bundle=None,
     ):
         """
         Initialize a CanadaHelps donation data processor.
@@ -64,8 +65,14 @@ class CHDonationMapper(DonationMapper):
             data (dict): Raw data from CanadaHelps CSV
             job_context (dict, optional): Job context containing job_id and machine_info for tracking
             custom_fields_available (dict, optional): Dict indicating which custom fields exist in NB
+            plugin_bundle: Explicit run-scoped plugin bundle
         """
-        super().__init__(data, job_context=job_context, custom_fields_available=custom_fields_available)
+        super().__init__(
+            data,
+            job_context=job_context,
+            custom_fields_available=custom_fields_available,
+            plugin_bundle=plugin_bundle,
+        )
 
         # Map the data to the NationBuilder fields with rules and conversions
         # Use map_field() to respect plugin priority (Option B architecture)
@@ -108,5 +115,4 @@ class CHDonationMapper(DonationMapper):
             self.NBlanguage = str(langcodes.find(donor_language)) if donor_language else ""
         except Exception:
             self.NBlanguage = ""
-
 

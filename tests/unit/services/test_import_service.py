@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from cdflow_cli.services.import_service import DonationImportService
+from cdflow_cli.plugins.registry import PluginBundle
 
 
 class TestDonationImportServiceSimple:
@@ -102,3 +103,70 @@ class TestDonationImportServiceSimple:
                 assert "_payment_type" not in content
                 assert "Recurring Credit Card" not in content
                 assert "_skip_row" not in content
+
+    def test_lookup_person_with_plugins_uses_explicit_bundle(self, mock_config_provider):
+        """Test that person lookup uses the run-scoped bundle before the global registry."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.people = Mock()
+
+                donation = Mock()
+                donation.lookup_person.return_value = (111, True, "default")
+
+                def bundle_lookup(donation_data_row, people_client, default_lookup):
+                    return (222, True, "bundle")
+
+                bundle = PluginBundle(
+                    adapter="paypal",
+                    all_plugins=[("bundle_lookup", bundle_lookup)],
+                    by_type={
+                        "row_transformer": [],
+                        "field_processor": [],
+                        "donation_validator": [],
+                        "person_lookup": [("bundle_lookup", bundle_lookup)],
+                    },
+                )
+
+                person_id, success, message = service._lookup_person_with_plugins(
+                    donation, "paypal", plugin_bundle=bundle
+                )
+
+                assert (person_id, success, message) == (222, True, "bundle")
+                donation.lookup_person.assert_not_called()
+
+    def test_lookup_person_with_plugins_falls_back_to_default_when_bundle_empty(
+        self, mock_config_provider
+    ):
+        """Test that empty bundles still fall back to donation default lookup."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.people = Mock()
+
+                donation = Mock()
+                donation.lookup_person.return_value = (333, True, "default")
+
+                bundle = PluginBundle(
+                    adapter="paypal",
+                    all_plugins=[],
+                    by_type={
+                        "row_transformer": [],
+                        "field_processor": [],
+                        "donation_validator": [],
+                        "person_lookup": [],
+                    },
+                )
+
+                person_id, success, message = service._lookup_person_with_plugins(
+                    donation, "paypal", plugin_bundle=bundle
+                )
+
+                assert (person_id, success, message) == (333, True, "default")
+                donation.lookup_person.assert_called_once_with(service.people)

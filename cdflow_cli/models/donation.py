@@ -9,6 +9,10 @@ import json
 import logging
 from datetime import datetime
 import pytz
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..plugins.registry import PluginBundle
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +23,7 @@ class DonationMapper:
     Provides common functionality for mapping source data to NationBuilder fields.
     """
 
-    def __init__(self, data, job_context=None, custom_fields_available=None):
+    def __init__(self, data, job_context=None, custom_fields_available=None, plugin_bundle=None):
         """
         Initialize a DonationMapper instance.
 
@@ -27,6 +31,7 @@ class DonationMapper:
             data (dict): Raw donation data from the source
             job_context (dict, optional): Job context containing job_id and machine_info for tracking
             custom_fields_available (dict, optional): Dict indicating which custom fields exist in NB
+            plugin_bundle (PluginBundle, optional): Explicit run-scoped plugin bundle
         """
         # Determine adapter name from class name (e.g., CHDonationMapper -> canadahelps)
         class_name = self.__class__.__name__
@@ -37,13 +42,19 @@ class DonationMapper:
         else:
             adapter_name = class_name.replace("DonationMapper", "").lower()
 
-        # Execute row transformer plugins BEFORE any data processing
-        from ..plugins.registry import get_plugins
+        # Execute row transformer plugins BEFORE any data processing.
+        # When a run-scoped bundle is provided, use it instead of re-reading the global registry.
+        if plugin_bundle is None:
+            from ..plugins.registry import get_plugins
+
+            row_transformers = get_plugins(adapter_name, "row_transformer")
+        else:
+            row_transformers = plugin_bundle.by_type.get("row_transformer", [])
 
         # Track original CSV fields for immutability checking
         original_csv_keys = set(k for k in data.keys() if not k.startswith('_'))
 
-        for plugin_name, transform_func in get_plugins(adapter_name, "row_transformer"):
+        for plugin_name, transform_func in row_transformers:
             try:
                 # Take snapshot BEFORE this plugin runs
                 before_plugin_values = {k: data.get(k) for k in original_csv_keys if k in data}

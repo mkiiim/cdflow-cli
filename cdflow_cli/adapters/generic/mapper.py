@@ -57,7 +57,7 @@ class GenericDonationMapper(DonationMapper):
 
         return cls.validate_row_case_insensitive(row, required_fields)
 
-    def __init__(self, data, job_context=None, custom_fields_available=None):
+    def __init__(self, data, job_context=None, custom_fields_available=None, plugin_bundle=None):
         """
         Initialize a GenericDonationData instance.
 
@@ -65,8 +65,14 @@ class GenericDonationMapper(DonationMapper):
             data (dict): Raw donation data from the source
             job_context (dict, optional): Job context containing job_id and machine_info for tracking
             custom_fields_available (dict, optional): Dict indicating which custom fields exist in NB
+            plugin_bundle: Explicit run-scoped plugin bundle
         """
-        super().__init__(data, job_context=job_context, custom_fields_available=custom_fields_available)
+        super().__init__(
+            data,
+            job_context=job_context,
+            custom_fields_available=custom_fields_available,
+            plugin_bundle=plugin_bundle,
+        )
 
         # Map basic fields
         self.NBfirst_name = self._clean_string(self.get_value("first_name"))

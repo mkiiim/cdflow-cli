@@ -2,10 +2,17 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, patch
 from cdflow_cli.models.donation import DonationMapper
+from cdflow_cli.plugins.registry import PluginBundle, clear_registry, register_plugin
 
 
 class TestDonationMapper:
     """Test the base DonationMapper class."""
+
+    def setup_method(self):
+        clear_registry()
+
+    def teardown_method(self):
+        clear_registry()
     
     @pytest.fixture
     def sample_data(self):
@@ -159,3 +166,36 @@ class TestDonationMapper:
         assert isinstance(result, str)
         # Should be current date (fallback)
         assert "T" in result  # ISO format
+
+    def test_init_uses_explicit_plugin_bundle_for_row_transformers(self, sample_data):
+        """Test that an explicit plugin bundle drives row-transformer execution."""
+        transformed = []
+
+        def bundle_transform(row_data):
+            row_copy = dict(row_data)
+            row_copy["_email"] = "bundle@example.com"
+            transformed.append("bundle")
+            return row_copy
+
+        @register_plugin("paypal", "row_transformer")
+        def registry_transform(row_data):
+            row_copy = dict(row_data)
+            row_copy["_email"] = "registry@example.com"
+            transformed.append("registry")
+            return row_copy
+
+        bundle = PluginBundle(
+            adapter="paypal",
+            all_plugins=[("bundle_transform", bundle_transform)],
+            by_type={
+                "row_transformer": [("bundle_transform", bundle_transform)],
+                "field_processor": [],
+                "donation_validator": [],
+                "person_lookup": [],
+            },
+        )
+
+        donation = DonationMapper(sample_data, plugin_bundle=bundle)
+
+        assert transformed == ["bundle"]
+        assert donation.NBemail == "bundle@example.com"

@@ -543,6 +543,7 @@ class DonationImportService:
             # Prepare adapter-specific options
             adapter_kwargs: Dict[str, Any] = {}
             donation_class = None
+            plugin_bundle = None
             source_type_lower = source_type.lower()
 
             if source_type_lower == "canadahelps":
@@ -551,7 +552,7 @@ class DonationImportService:
                 donation_class = CHDonationMapper
 
                 # Load plugins if configured
-                self._load_plugins_if_configured("canadahelps")
+                plugin_bundle = self._load_plugins_if_configured("canadahelps")
 
             elif source_type_lower == "paypal":
                 from ..adapters.paypal import PPDonationMapper
@@ -559,7 +560,7 @@ class DonationImportService:
                 donation_class = PPDonationMapper
 
                 # Load plugins if configured
-                self._load_plugins_if_configured("paypal")
+                plugin_bundle = self._load_plugins_if_configured("paypal")
 
             else:
                 processing_logger.error(f"Unsupported source type: {source_type}")
@@ -613,6 +614,7 @@ class DonationImportService:
                             row,
                             job_context=self.job_context,
                             custom_fields_available=self.custom_fields_available,
+                            plugin_bundle=plugin_bundle,
                             **adapter_kwargs,
                         )
                     except Exception as e:
@@ -656,7 +658,11 @@ class DonationImportService:
 
                     # Try to find the person using plugin or parser-specific lookup logic
                     person_id, response_success_get_personid_by_email, message = (
-                        self._lookup_person_with_plugins(donation_data_row, source_type_lower)
+                        self._lookup_person_with_plugins(
+                            donation_data_row,
+                            source_type_lower,
+                            plugin_bundle=plugin_bundle,
+                        )
                     )
                     
                     # Get updated data after lookup (captures any parser internal updates)
@@ -871,21 +877,24 @@ class DonationImportService:
 
         return load_plugin_bundle(adapter, plugins_path)
 
-    def _lookup_person_with_plugins(self, donation_data_row, adapter: str):
+    def _lookup_person_with_plugins(self, donation_data_row, adapter: str, plugin_bundle=None):
         """
         Look up person using plugin or default logic.
 
         Args:
             donation_data_row: DonationData object
             adapter: Adapter name (canadahelps, paypal)
+            plugin_bundle: Explicit run-scoped plugin bundle
 
         Returns:
             Tuple of (person_id, success_flag, message)
         """
-        from ..plugins.registry import get_plugins
+        if plugin_bundle is None:
+            from ..plugins.registry import get_plugins
 
-        # Check if there's a person_lookup plugin registered
-        plugins = get_plugins(adapter, "person_lookup")
+            plugins = get_plugins(adapter, "person_lookup")
+        else:
+            plugins = plugin_bundle.by_type.get("person_lookup", [])
 
         if plugins:
             # Use the first registered person_lookup plugin

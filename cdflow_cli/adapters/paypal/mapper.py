@@ -47,7 +47,7 @@ class PPDonationMapper(DonationMapper):
 
         return True, None
 
-    def __init__(self, data, job_context=None, custom_fields_available=None):
+    def __init__(self, data, job_context=None, custom_fields_available=None, plugin_bundle=None):
         """
         Initialize a PayPal donation data processor.
 
@@ -55,8 +55,14 @@ class PPDonationMapper(DonationMapper):
             data (dict): Raw data from PayPal CSV
             job_context (dict, optional): Job context containing job_id and machine_info for tracking
             custom_fields_available (dict, optional): Dict indicating which custom fields exist in NB
+            plugin_bundle: Explicit run-scoped plugin bundle
         """
-        super().__init__(data, job_context=job_context, custom_fields_available=custom_fields_available)
+        super().__init__(
+            data,
+            job_context=job_context,
+            custom_fields_available=custom_fields_available,
+            plugin_bundle=plugin_bundle,
+        )
 
         # Map the data to the NationBuilder fields with rules and conversions
         # Use map_field() to respect plugin priority (Option B architecture)
@@ -96,5 +102,4 @@ class PPDonationMapper(DonationMapper):
         self.map_field("NBbilling_address_state", "State/Province/Region/County/Territory/Prefecture/Republic")
         self.map_field("NBbilling_address_zip", "Zip/Postal Code")
         self.map_field("NBbilling_address_country", "Country")
-
 
