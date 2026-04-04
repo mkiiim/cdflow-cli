@@ -549,6 +549,15 @@ def run_cli_with_jobs(job_manager, config: ConfigProvider, oauth_tokens: Dict[st
 
         # Create job
         logger.info(f"Creating job from CLI machine: {machine_info}")
+        active_log_filename = None
+        if job_manager.logging_provider and hasattr(
+            job_manager.logging_provider, "get_current_log_filename"
+        ):
+            try:
+                active_log_filename = job_manager.logging_provider.get_current_log_filename()
+            except Exception:
+                active_log_filename = None
+
         job_id = job_manager.create_job(
             user_id="cli_user",
             nation_slug=nation_slug,
@@ -556,6 +565,7 @@ def run_cli_with_jobs(job_manager, config: ConfigProvider, oauth_tokens: Dict[st
             storage_path=f"{source_type.lower()}/{file_id}",
             source_type=source_type,
             job_params={"cli_mode": True},
+            api_log_filename=active_log_filename,
             oauth_tokens=oauth_tokens,  # Pass the obtained OAuth tokens
             machine_info=machine_info,  # Machine information with context
         )

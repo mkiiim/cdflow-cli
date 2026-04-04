@@ -90,6 +90,14 @@ class TestImportArtifactContracts:
 
         assert filename == "IMPORTDONATIONS_20260404-105551_job-123_monthly-giving.log"
 
+    def test_extractor_prefers_explicit_job_owned_log_filename(self):
+        extractor = ImportLogExtractor.__new__(ImportLogExtractor)
+        extractor.logging_provider = Mock()
+
+        filename = extractor._get_current_api_log_file("APP_20260404_105551.log")
+
+        assert filename == "APP_20260404_105551.log"
+
 
 class TestRollbackArtifactContracts:
     """Behavior-first contracts for rollback core processing."""

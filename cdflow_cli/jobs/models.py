@@ -9,7 +9,7 @@ in the API layer, providing schema validation and documentation.
 """
 
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 
@@ -32,6 +32,19 @@ class FileUploadResponse(BaseModel):
     upload_time: str = Field(..., description="Timestamp when the file was uploaded")
 
 
+class JobArtifact(BaseModel):
+    """Model representing a persisted artifact owned by a job."""
+
+    path: str = Field(..., description="Relative artifact path or filename")
+    storage_root: Optional[str] = Field(
+        None, description="Logical storage area containing the artifact"
+    )
+    display_name: Optional[str] = Field(
+        None, description="Operator-facing filename for download packaging"
+    )
+    kind: Optional[str] = Field(None, description="Artifact role within the job lifecycle")
+
+
 class JobResult(BaseModel):
     """Model representing the result of a completed job."""
 
@@ -41,6 +54,9 @@ class JobResult(BaseModel):
     success_file: Optional[str] = Field(None, description="Path to the success output file")
     fail_file: Optional[str] = Field(None, description="Path to the failed records output file")
     log_file: Optional[str] = Field(None, description="Path to the log file")
+    artifacts: Optional[Dict[str, JobArtifact]] = Field(
+        None, description="Structured artifact references for result-related files"
+    )
 
 
 class JobResponse(BaseModel):

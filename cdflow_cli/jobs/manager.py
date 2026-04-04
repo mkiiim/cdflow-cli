@@ -22,7 +22,7 @@ from ..utils.logging import LoggingProvider
 from ..utils.paths import get_paths
 from .extractor import ImportLogExtractor
 from ..services.import_service import DonationImportService
-from .models import JobStatus, JobResult
+from .models import JobArtifact, JobStatus, JobResult
 
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
@@ -72,6 +72,42 @@ class JobManager:
             self.log_extractor = None
 
         logger.debug("JobManager initialized")
+
+    @staticmethod
+    def _build_artifact(
+        path: Optional[str],
+        storage_root: str,
+        kind: str,
+        display_name: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Build a serialized job artifact reference when a concrete path exists."""
+        if not path:
+            return None
+
+        artifact = JobArtifact(
+            path=path,
+            storage_root=storage_root,
+            display_name=display_name or Path(path).name,
+            kind=kind,
+        )
+        return artifact.dict()
+
+    def _set_job_artifact(
+        self,
+        job: Dict[str, Any],
+        artifact_key: str,
+        path: Optional[str],
+        storage_root: str,
+        kind: str,
+        display_name: Optional[str] = None,
+    ) -> None:
+        """Set or clear a persisted artifact reference on the job record."""
+        artifacts = job.setdefault("artifacts", {})
+        if not path:
+            artifacts.pop(artifact_key, None)
+            return
+
+        artifacts[artifact_key] = self._build_artifact(path, storage_root, kind, display_name)
 
     def start_worker(self):
         """
@@ -250,6 +286,12 @@ class JobManager:
                     final_total_count = (
                         csv_total_count if csv_total_count > 0 else success_count + fail_count
                     )
+                    result_artifacts = {
+                        "success": self._build_artifact(
+                            success_filename, "output", "success_output"
+                        ),
+                        "fail": self._build_artifact(fail_filename, "output", "fail_output"),
+                    }
                     result = JobResult(
                         success_count=success_count,
                         fail_count=fail_count,
@@ -257,6 +299,7 @@ class JobManager:
                         success_file=success_filename,
                         fail_file=fail_filename,
                         log_file=log_filename,
+                        artifacts=result_artifacts,
                     )
 
                     logger.info(
@@ -356,7 +399,15 @@ class JobManager:
             "api_log_filename": api_log_filename,  # Reference to the API log file for this session
             "oauth_tokens": oauth_tokens,  # Store OAuth tokens from authenticated user
             "machine_info": machine_info or {},  # Store machine information (hostname, IP, context)
+            "artifacts": {},
         }
+
+        self._set_job_artifact(job, "source", storage_path, "app_processing", "source_input")
+        self._set_job_artifact(job, "job", f"{job_id}.json", "jobs", "job_record")
+        if api_log_filename:
+            self._set_job_artifact(
+                job, "active_app_log", api_log_filename, "logs", "active_app_log"
+            )
 
         # Save the job to the store and file
         jobs_store[job_id] = job
@@ -577,6 +628,35 @@ class JobManager:
 
             if result is not None:
                 job["result"] = result.dict()
+                result_artifacts = job["result"].get("artifacts")
+                if not isinstance(result_artifacts, dict):
+                    result_artifacts = {}
+                    job["result"]["artifacts"] = result_artifacts
+
+                success_artifact = self._build_artifact(
+                    result.success_file,
+                    "output",
+                    "success_output",
+                )
+                fail_artifact = self._build_artifact(
+                    result.fail_file,
+                    "output",
+                    "fail_output",
+                )
+
+                if success_artifact:
+                    result_artifacts["success"] = success_artifact
+                if fail_artifact:
+                    result_artifacts["fail"] = fail_artifact
+
+                self._set_job_artifact(
+                    job,
+                    "success",
+                    result.success_file,
+                    "output",
+                    "success_output",
+                )
+                self._set_job_artifact(job, "fail", result.fail_file, "output", "fail_output")
 
             if error_message is not None:
                 job["error_message"] = error_message
@@ -665,6 +745,7 @@ class JobManager:
                 start_time=start_time,
                 end_time=end_time,
                 original_filename=original_filename,
+                api_log_filename=job.get("api_log_filename"),
             )
 
             # Update job result with the actual import log path
@@ -672,6 +753,14 @@ class JobManager:
                 # Update the log_file in the result to point to extracted log
                 with self._job_lock:
                     job["result"]["log_file"] = import_log_path
+                    result_artifacts = job["result"].get("artifacts")
+                    if not isinstance(result_artifacts, dict):
+                        result_artifacts = {}
+                        job["result"]["artifacts"] = result_artifacts
+                    result_artifacts["log"] = self._build_artifact(
+                        import_log_path, "logs", "import_log"
+                    )
+                    self._set_job_artifact(job, "log", import_log_path, "logs", "import_log")
                     job["updated_at"] = datetime.now().isoformat()
 
                     # Save updated job record

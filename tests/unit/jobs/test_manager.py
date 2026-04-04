@@ -108,6 +108,8 @@ class TestJobManager:
         assert job["nation_slug"] == "test_nation"
         assert job["status"] == JobStatus.PENDING.value
         assert job["progress"] == 0
+        assert job["artifacts"]["source"]["path"] == "/tmp/test_file.csv"
+        assert job["artifacts"]["job"]["path"] == f"{job_id}.json"
 
     def test_create_job_cli_format(self, job_manager):
         """Test job creation with CLI file ID format."""
@@ -211,6 +213,40 @@ class TestJobManager:
         assert job["status"] == JobStatus.COMPLETED.value
         assert job["result"]["success_count"] == 10
         assert job["result"]["fail_count"] == 2
+        assert job["result"]["artifacts"]["success"]["path"] == "success.csv"
+        assert job["artifacts"]["success"]["path"] == "success.csv"
+
+    def test_update_job_with_partial_result_counts_only(self, job_manager):
+        """Partial progress results should not require artifact filenames."""
+        with patch.object(job_manager, 'start_worker'):
+            job_id = job_manager.create_job(
+                user_id="test_user",
+                nation_slug="test_nation",
+                file_id="12345_test_file.csv",
+                storage_path="/tmp/test_file.csv",
+                source_type="CanadaHelps"
+            )
+
+        partial_result = JobResult(
+            success_count=3,
+            fail_count=1,
+            total_count=5,
+            success_file=None,
+            fail_file=None,
+            log_file=None
+        )
+
+        job_manager._update_job_status(
+            job_id, JobStatus.RUNNING, 60, result=partial_result
+        )
+
+        job = job_manager.get_job_status(job_id)
+        assert job["status"] == JobStatus.RUNNING.value
+        assert job["result"]["success_count"] == 3
+        assert job["result"]["fail_count"] == 1
+        assert job["result"]["artifacts"] == {}
+        assert "success" not in job["artifacts"]
+        assert "fail" not in job["artifacts"]
 
     def test_abort_job_pending(self, job_manager):
         """Test aborting a pending job."""

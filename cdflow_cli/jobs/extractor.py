@@ -135,7 +135,12 @@ class ImportLogExtractor:
         return {"time_buffer_after": 10, "max_extraction_window": 30}
 
     def extract_import_log(
-        self, job_id: str, start_time: str, end_time: str, original_filename: Optional[str] = None
+        self,
+        job_id: str,
+        start_time: str,
+        end_time: str,
+        original_filename: Optional[str] = None,
+        api_log_filename: Optional[str] = None,
     ) -> str:
         """
         Extract import-specific logs for a job.
@@ -156,7 +161,7 @@ class ImportLogExtractor:
 
         try:
             # Get current API log file
-            api_log_file = self._get_current_api_log_file()
+            api_log_file = self._get_current_api_log_file(api_log_filename)
             if not api_log_file:
                 raise FileNotFoundError("No current API log file found")
 
@@ -186,8 +191,14 @@ class ImportLogExtractor:
             logger.error(f"Failed to extract import log for job {job_id}: {str(e)}")
             raise
 
-    def _get_current_api_log_file(self) -> Optional[str]:
+    def _get_current_api_log_file(self, explicit_log_filename: Optional[str] = None) -> Optional[str]:
         """Get the current API log file path."""
+        if explicit_log_filename:
+            logger.debug(
+                f"Using explicit job-owned API log file for extraction: {explicit_log_filename}"
+            )
+            return explicit_log_filename
+
         # First try to get the actual current log filename from logging provider
         if self.logging_provider and hasattr(self.logging_provider, "get_current_log_filename"):
             try:

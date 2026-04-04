@@ -144,6 +144,11 @@ class TestImportLogExtractor:
         log_file = extractor._get_current_api_log_file()
         assert log_file == "APP_20250917_123456.log"
 
+    def test_get_current_api_log_file_prefers_explicit_job_field(self, extractor):
+        """Test explicit job-owned log filename takes precedence over provider lookup."""
+        log_file = extractor._get_current_api_log_file("APP_20260404_105551.log")
+        assert log_file == "APP_20260404_105551.log"
+
     def test_get_current_api_log_file_fallback(self, extractor, mock_paths):
         """Test fallback log file detection when provider unavailable."""
         extractor.logging_provider = None

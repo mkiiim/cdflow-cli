@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from cdflow_cli.adapters.nationbuilder.oauth import NationBuilderOAuth
-from cdflow_cli.jobs import JobManager, JobResult, JobStatus
+from cdflow_cli.jobs import JobArtifact, JobManager, JobResult, JobStatus
 from cdflow_cli.services.auth_service import AuthContext, UnifiedAuthService
 from cdflow_cli.utils.bootstrap import initialize_components_simplified
 from cdflow_cli.utils.config import ConfigProvider
@@ -22,6 +22,7 @@ class TestConsumingAppSurfaceContracts:
         assert JobManager.__name__ == "JobManager"
         assert JobStatus.COMPLETED.value == "completed"
         assert JobResult.__name__ == "JobResult"
+        assert JobArtifact.__name__ == "JobArtifact"
         assert callable(initialize_paths)
         assert callable(initialize_components_simplified)
         assert NationBuilderOAuth.__name__ == "NationBuilderOAuth"
@@ -69,8 +70,17 @@ class TestConsumingAppSurfaceContracts:
             success_file="job-123_success.csv",
             fail_file="job-123_fail.csv",
             log_file="IMPORTDONATIONS_20260404-105551_job-123.log",
+            artifacts={
+                "success": JobArtifact(
+                    path="job-123_success.csv",
+                    storage_root="output",
+                    display_name="job-123_success.csv",
+                    kind="success_output",
+                )
+            },
         )
 
         assert result.success_file == "job-123_success.csv"
         assert result.fail_file == "job-123_fail.csv"
         assert result.log_file == "IMPORTDONATIONS_20260404-105551_job-123.log"
+        assert result.artifacts["success"].path == "job-123_success.csv"
