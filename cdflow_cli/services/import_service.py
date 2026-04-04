@@ -436,6 +436,261 @@ class DonationImportService:
             f.write(csv_output.getvalue())
         logger.debug(f"Appended row to file: {filename}")
 
+    def _resolve_import_adapter(self, source_type: str):
+        """
+        Resolve the mapper class and plugin bundle for a source type.
+
+        Args:
+            source_type: Source type provided to process_donations
+
+        Returns:
+            Tuple of (normalized_source_type, donation_class, adapter_kwargs, plugin_bundle)
+        """
+        adapter_kwargs: Dict[str, Any] = {}
+        source_type_lower = source_type.lower()
+
+        if source_type_lower == "canadahelps":
+            from ..adapters.canadahelps import CHDonationMapper
+
+            return (
+                source_type_lower,
+                CHDonationMapper,
+                adapter_kwargs,
+                self._load_plugins_if_configured("canadahelps"),
+            )
+
+        if source_type_lower == "paypal":
+            from ..adapters.paypal import PPDonationMapper
+
+            return (
+                source_type_lower,
+                PPDonationMapper,
+                adapter_kwargs,
+                self._load_plugins_if_configured("paypal"),
+            )
+
+        raise ValueError(f"Unsupported source type: {source_type}")
+
+    def _create_donation_mapper(
+        self,
+        donation_class,
+        row: Dict[str, Any],
+        plugin_bundle,
+        adapter_kwargs: Dict[str, Any],
+    ):
+        """
+        Create a mapper instance for a CSV row using explicit run-scoped dependencies.
+        """
+        return donation_class(
+            row,
+            job_context=self.job_context,
+            custom_fields_available=self.custom_fields_available,
+            plugin_bundle=plugin_bundle,
+            **adapter_kwargs,
+        )
+
+    def _initialize_output_fields(self, row: Dict[str, Any]) -> None:
+        """Initialize NB tracking fields on the output row."""
+        row["NB Donation ID"] = ""
+        row["NB People ID"] = ""
+        row["NB People Create Date"] = ""
+        row["NB Error Message"] = ""
+
+    def _record_failed_row(
+        self,
+        fail_filename: str,
+        row: Dict[str, Any],
+        extended_fieldnames: List[str],
+        encoding: str,
+        error_message: str,
+    ) -> None:
+        """Write a failed row with its final error message."""
+        row["NB Error Message"] = error_message
+        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+
+    def _record_successful_row(
+        self,
+        success_filename: str,
+        row: Dict[str, Any],
+        extended_fieldnames: List[str],
+        encoding: str,
+        donation_id,
+        person_id,
+        message: str,
+        donation_existed: bool,
+    ) -> None:
+        """Write a successful row with recorded NationBuilder IDs."""
+        row["NB Donation ID"] = donation_id
+        row["NB People ID"] = person_id
+        row["NB Error Message"] = message if donation_existed else ""
+        self._append_row_to_file(success_filename, row, extended_fieldnames, encoding)
+
+    def _handle_processing_failure(
+        self,
+        fail_filename: str,
+        row: Dict[str, Any],
+        extended_fieldnames: List[str],
+        encoding: str,
+        donation_data_row,
+        response_success_create_person: bool,
+        response_success_create_donation: bool,
+        person_id,
+        message: str,
+    ) -> bool:
+        """
+        Handle a row-processing failure and write the fail artifact.
+
+        Returns:
+            bool: True when processing should continue, False when the main loop should break.
+        """
+        if donation_data_row and donation_data_row.data.get("_skip_row"):
+            skip_reason = donation_data_row.data.get("_skip_reason", "Ineligible record")
+            self._record_failed_row(
+                fail_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                f"Not eligible: {skip_reason}",
+            )
+            return True
+
+        if response_success_create_person and not response_success_create_donation:
+            row["NB Error Message"] = message
+            response_success_delete_person, delete_message = self.people.delete_person(person_id)
+            if response_success_delete_person:
+                logger.info("👤 CLEANUP: ✓ Deleted person created by this donation")
+                self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                return True
+
+            logger.error(f"👤 CLEANUP: ✗ FAILED to delete person (ID: {person_id})")
+            logger.debug(f"{response_success_delete_person}")
+            self._record_failed_row(
+                fail_filename,
+                row,
+                extended_fieldnames,
+                encoding,
+                f"{row['NB Error Message']} :: {delete_message}",
+            )
+            return False
+
+        if not response_success_create_person:
+            self._record_failed_row(fail_filename, row, extended_fieldnames, encoding, message)
+
+        return True
+
+    def _handle_unexpected_row_failure(
+        self,
+        fail_filename: str,
+        row: Dict[str, Any],
+        extended_fieldnames: List[str],
+        encoding: str,
+        error: Exception,
+    ) -> None:
+        """Persist an unexpected row-processing error."""
+        self._record_failed_row(
+            fail_filename,
+            row,
+            extended_fieldnames,
+            encoding,
+            f"Unexpected error: {str(error)}",
+        )
+
+    def _ensure_api_clients_ready(self) -> None:
+        """Initialize API clients on demand for row processing."""
+        if not self.oauth_initialized and not self.initialize_api_clients():
+            logger.error("Failed to initialize API clients")
+            raise ValueError("Failed to initialize API clients")
+
+    def _resolve_person_and_payloads(self, donation_data_row, adapter: str, plugin_bundle):
+        """
+        Resolve the person lookup and parse mapper payloads after lookup-side mutation.
+
+        Returns:
+            Tuple of (person_id, person_found, message, people_data, donation_data)
+        """
+        person_id, person_found, message = self._lookup_person_with_plugins(
+            donation_data_row,
+            adapter,
+            plugin_bundle=plugin_bundle,
+        )
+
+        try:
+            people_data = json.loads(donation_data_row.to_json_people_data())
+            donation_data = json.loads(donation_data_row.to_json_donation_data())
+        except Exception as e:
+            logger.error(f"Error parsing donation data JSON after lookup: {str(e)}", exc_info=True)
+            raise ValueError(f"Error parsing donation data: {str(e)}") from e
+
+        return person_id, person_found, message, people_data, donation_data
+
+    def _ensure_person_record(
+        self,
+        person_id,
+        person_found: bool,
+        people_data: Dict[str, Any],
+    ) -> Tuple[Any, bool, str]:
+        """
+        Ensure a donor exists in NationBuilder, creating and then updating when needed.
+
+        Returns:
+            Tuple of (person_id, created_person, message)
+        """
+        if person_found:
+            return person_id, False, ""
+
+        temp_phone = people_data["phone"]
+        people_data["phone"] = ""  # do not overwrite what is already in NB
+
+        person_id, response_success_create_person, message = self.people.create_person(people_data)
+        if not response_success_create_person:
+            raise ValueError(f"Failed to create person: {people_data}")
+
+        people_data["phone"] = temp_phone
+        person_id, response_success_update_person, message = self.people.update_person(
+            person_id, people_data
+        )
+        if not response_success_update_person:
+            raise ValueError(
+                f"FAILURE update_person :: problem with FIX for phone number issue :: {people_data}"
+            )
+
+        return person_id, True, message
+
+    def _find_or_create_donation(
+        self,
+        person_id,
+        donation_data: Dict[str, Any],
+    ) -> Tuple[Any, bool, str]:
+        """
+        Find an existing donation or create a new one.
+
+        Returns:
+            Tuple of (donation_id, donation_existed, message)
+        """
+        search_params = {
+            "donor_id": person_id,
+            "succeeded_since": donation_data["succeeded_at"],
+        }
+        donation_id, donation_exists, message = self.donation.get_donationid_by_params(
+            search_params, donation_data["check_number"]
+        )
+
+        if donation_exists:
+            return donation_id, True, "Donation already existed"
+
+        if person_id:
+            donation_data["donor_id"] = person_id
+            donation_data["first_name"] = ""  # do not overwrite what is already in NB
+            donation_data["last_name"] = ""  # do not overwrite what is already in NB
+
+        donation_id, response_success_create_donation, message = self.donation.create_donation(
+            donation_data
+        )
+        if not response_success_create_donation:
+            raise ValueError(f"Failed to create donation: {donation_data}")
+
+        return donation_id, False, message
+
     def process_donations(
         self,
         input_filename: str,
@@ -540,29 +795,11 @@ class DonationImportService:
             fail_count = 0
             row_counter = 0
 
-            # Prepare adapter-specific options
-            adapter_kwargs: Dict[str, Any] = {}
-            donation_class = None
-            plugin_bundle = None
-            source_type_lower = source_type.lower()
-
-            if source_type_lower == "canadahelps":
-                from ..adapters.canadahelps import CHDonationMapper
-
-                donation_class = CHDonationMapper
-
-                # Load plugins if configured
-                plugin_bundle = self._load_plugins_if_configured("canadahelps")
-
-            elif source_type_lower == "paypal":
-                from ..adapters.paypal import PPDonationMapper
-
-                donation_class = PPDonationMapper
-
-                # Load plugins if configured
-                plugin_bundle = self._load_plugins_if_configured("paypal")
-
-            else:
+            try:
+                source_type_lower, donation_class, adapter_kwargs, plugin_bundle = (
+                    self._resolve_import_adapter(source_type)
+                )
+            except ValueError as e:
                 processing_logger.error(f"Unsupported source type: {source_type}")
                 if progress_callback:
                     progress_callback(0, f"Error: Unsupported source type {source_type}")
@@ -603,35 +840,36 @@ class DonationImportService:
                     is_valid, error_message = donation_class.validate_row(row)
                     if not is_valid:
                         processing_logger.error(f"Invalid row data: {error_message}")
-                        row["NB Error Message"] = error_message
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                        self._record_failed_row(
+                            fail_filename, row, extended_fieldnames, encoding, error_message
+                        )
                         fail_count += 1
                         continue
 
                     # Create the donation data object with job context and custom field detection
                     try:
-                        donation_data_row = donation_class(
+                        donation_data_row = self._create_donation_mapper(
+                            donation_class,
                             row,
-                            job_context=self.job_context,
-                            custom_fields_available=self.custom_fields_available,
-                            plugin_bundle=plugin_bundle,
-                            **adapter_kwargs,
+                            plugin_bundle,
+                            adapter_kwargs,
                         )
                     except Exception as e:
                         processing_logger.error(
                             f"Error creating donation data object: {str(e)}", exc_info=True
                         )
-                        row["NB Error Message"] = f"Error creating donation data: {str(e)}"
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                        self._record_failed_row(
+                            fail_filename,
+                            row,
+                            extended_fieldnames,
+                            encoding,
+                            f"Error creating donation data: {str(e)}",
+                        )
                         fail_count += 1
                         continue
 
-
                     # Initialize output fields
-                    row["NB Donation ID"] = ""
-                    row["NB People ID"] = ""
-                    row["NB People Create Date"] = ""
-                    row["NB Error Message"] = ""
+                    self._initialize_output_fields(row)
 
                     # Set response flags to False
                     response_success_create_donation = False
@@ -645,36 +883,36 @@ class DonationImportService:
                         processing_logger.warning(
                             f"Donation not eligible: {skip_reason}"
                         )
-                        row["NB Error Message"] = f"Not eligible: {skip_reason}"
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                        self._record_failed_row(
+                            fail_filename,
+                            row,
+                            extended_fieldnames,
+                            encoding,
+                            f"Not eligible: {skip_reason}",
+                        )
                         fail_count += 1
                         continue
 
                     # Check if API clients are initialized
-                    if not self.oauth_initialized:
-                        if not self.initialize_api_clients():
-                            processing_logger.error("Failed to initialize API clients")
-                            raise ValueError("Failed to initialize API clients")
+                    self._ensure_api_clients_ready()
 
                     # Try to find the person using plugin or parser-specific lookup logic
-                    person_id, response_success_get_personid_by_email, message = (
-                        self._lookup_person_with_plugins(
+                    try:
+                        (
+                            person_id,
+                            response_success_get_personid_by_email,
+                            message,
+                            people_data,
+                            donation_data,
+                        ) = self._resolve_person_and_payloads(
                             donation_data_row,
                             source_type_lower,
                             plugin_bundle=plugin_bundle,
                         )
-                    )
-                    
-                    # Get updated data after lookup (captures any parser internal updates)
-                    try:
-                        people_data = json.loads(donation_data_row.to_json_people_data())
-                        donation_data = json.loads(donation_data_row.to_json_donation_data())
-                    except Exception as e:
-                        processing_logger.error(
-                            f"Error parsing donation data JSON after lookup: {str(e)}", exc_info=True
+                    except ValueError as e:
+                        self._record_failed_row(
+                            fail_filename, row, extended_fieldnames, encoding, str(e)
                         )
-                        row["NB Error Message"] = f"Error parsing donation data: {str(e)}"
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
                         fail_count += 1
                         continue
 
@@ -684,27 +922,11 @@ class DonationImportService:
                     )
 
                     # If person not found, create a new person record
-                    if not response_success_get_personid_by_email:
-                        # Handle phone number issue: NB is using it as a unique identifier during create
-                        temp_phone = people_data["phone"]
-                        people_data["phone"] = ""  # do not overwrite what is already in NB
-
-                        # Create person
-                        person_id, response_success_create_person, message = (
-                            self.people.create_person(people_data)
-                        )
-                        if not response_success_create_person:
-                            raise ValueError(f"Failed to create person: {people_data}")
-
-                        # Update with phone number
-                        people_data["phone"] = temp_phone
-                        person_id, response_success_update_person, message = (
-                            self.people.update_person(person_id, people_data)
-                        )
-                        if not response_success_update_person:
-                            raise ValueError(
-                                f"FAILURE update_person :: problem with FIX for phone number issue :: {people_data}"
-                            )
+                    person_id, response_success_create_person, message = self._ensure_person_record(
+                        person_id,
+                        response_success_get_personid_by_email,
+                        people_data,
+                    )
 
                     # Log person status
                     if response_success_get_personid_by_email:
@@ -715,33 +937,10 @@ class DonationImportService:
                         row["NB People Create Date"] = self.now_str
 
                     # Check if donation already exists
-                    response_success_create_donation = False
-                    search_params = {
-                        "donor_id": person_id,
-                        "succeeded_since": donation_data["succeeded_at"],
-                    }
                     donation_id, response_success_get_donationid_by_params, message = (
-                        self.donation.get_donationid_by_params(
-                            search_params, donation_data["check_number"]
-                        )
+                        self._find_or_create_donation(person_id, donation_data)
                     )
-
-                    # Create donation if it doesn't exist
-                    if not response_success_get_donationid_by_params:
-                        if person_id:
-                            donation_data["donor_id"] = person_id
-                            donation_data["first_name"] = (
-                                ""  # do not overwrite what is already in NB
-                            )
-                            donation_data["last_name"] = (
-                                ""  # do not overwrite what is already in NB
-                            )
-
-                        donation_id, response_success_create_donation, message = (
-                            self.donation.create_donation(donation_data)
-                        )
-                        if not response_success_create_donation:
-                            raise ValueError(f"Failed to create donation: {donation_data}")
+                    response_success_create_donation = not response_success_get_donationid_by_params
 
                     # Log donation status
                     if response_success_get_donationid_by_params:
@@ -755,14 +954,16 @@ class DonationImportService:
                         )
 
                     # Record IDs in the output row
-                    row["NB Donation ID"] = donation_id
-                    row["NB People ID"] = person_id
-                    row["NB Error Message"] = (
-                        message if response_success_get_donationid_by_params else ""
+                    self._record_successful_row(
+                        success_filename,
+                        row,
+                        extended_fieldnames,
+                        encoding,
+                        donation_id,
+                        person_id,
+                        message,
+                        response_success_get_donationid_by_params,
                     )
-
-                    # Write the row to success file - using output file type
-                    self._append_row_to_file(success_filename, row, extended_fieldnames, encoding)
                     success_count += 1
                     processing_logger.info(f"✅ RECORD {row_counter} COMPLETED SUCCESSFULLY")
                     processing_logger.info(f"{'═'*60}")
@@ -772,55 +973,27 @@ class DonationImportService:
                     processing_logger.error(f"❌ RECORD {row_counter} FAILED: {str(e)}")
                     processing_logger.info(f"{'═'*60}")
 
-                    # Ineligible records are added to the fail rows - using output file type
-                    if (
-                        "donation_data_row" in locals()
-                        and donation_data_row.data.get("_skip_row")
-                    ):
-                        skip_reason = donation_data_row.data.get("_skip_reason", "Ineligible record")
-                        row["NB Error Message"] = f"Not eligible: {skip_reason}"
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
-                        continue
-
-                    # If the donation was not created, but a person was, remove the person
-                    if response_success_create_person and not response_success_create_donation:
-                        row["NB Error Message"] = (
-                            message  # Capture the error message from donation creation
-                        )
-                        response_success_delete_person, message = self.people.delete_person(
-                            person_id
-                        )
-                        if response_success_delete_person:
-                            processing_logger.info(
-                                "👤 CLEANUP: ✓ Deleted person created by this donation"
-                            )
-                            self._append_row_to_file(
-                                fail_filename, row, extended_fieldnames, encoding
-                            )
-                        else:
-                            processing_logger.error(
-                                f"👤 CLEANUP: ✗ FAILED to delete person (ID: {person_id})"
-                            )
-                            processing_logger.debug(f"{response_success_delete_person}")
-
-                            # Halt further processing, escape the loop
-                            row["NB Error Message"] = f"{row['NB Error Message']} :: {message}"
-                            self._append_row_to_file(
-                                fail_filename, row, extended_fieldnames, encoding
-                            )
-                            break
-
-                    # Handle other failures - using output file type
-                    if not response_success_create_person:
-                        row["NB Error Message"] = message
-                        self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                    should_continue = self._handle_processing_failure(
+                        fail_filename,
+                        row,
+                        extended_fieldnames,
+                        encoding,
+                        donation_data_row if "donation_data_row" in locals() else None,
+                        response_success_create_person,
+                        response_success_create_donation,
+                        person_id if "person_id" in locals() else None,
+                        message,
+                    )
+                    if not should_continue:
+                        break
 
                 except Exception as e:
                     # Catch broader exceptions
                     fail_count += 1
                     processing_logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-                    row["NB Error Message"] = f"Unexpected error: {str(e)}"
-                    self._append_row_to_file(fail_filename, row, extended_fieldnames, encoding)
+                    self._handle_unexpected_row_failure(
+                        fail_filename, row, extended_fieldnames, encoding, e
+                    )
 
             # Final progress update
             if progress_callback:

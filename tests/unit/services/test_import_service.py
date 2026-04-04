@@ -170,3 +170,172 @@ class TestDonationImportServiceSimple:
 
                 assert (person_id, success, message) == (333, True, "default")
                 donation.lookup_person.assert_called_once_with(service.people)
+
+    def test_resolve_import_adapter_returns_paypal_mapper_and_bundle(self, mock_config_provider):
+        """Test adapter resolution returns the mapper class and run-scoped bundle."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                bundle = PluginBundle(
+                    adapter="paypal",
+                    all_plugins=[],
+                    by_type={
+                        "row_transformer": [],
+                        "field_processor": [],
+                        "donation_validator": [],
+                        "person_lookup": [],
+                    },
+                )
+
+                with patch.object(service, "_load_plugins_if_configured", return_value=bundle):
+                    source_type_lower, donation_class, adapter_kwargs, resolved_bundle = (
+                        service._resolve_import_adapter("paypal")
+                    )
+
+                assert source_type_lower == "paypal"
+                assert donation_class.__name__ == "PPDonationMapper"
+                assert adapter_kwargs == {}
+                assert resolved_bundle is bundle
+
+    def test_ensure_person_record_creates_and_updates_when_lookup_misses(
+        self, mock_config_provider
+    ):
+        """Test person creation/update path remains isolated in the extracted helper."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.people = Mock()
+                create_payloads = []
+
+                def create_person_side_effect(payload):
+                    create_payloads.append(dict(payload))
+                    return (456, True, "created")
+
+                service.people.create_person.side_effect = create_person_side_effect
+                service.people.update_person.return_value = (456, True, "updated")
+
+                people_data = {"phone": "555-1212", "email": "jane@example.com"}
+
+                person_id, created_person, message = service._ensure_person_record(
+                    None, False, people_data
+                )
+
+                assert (person_id, created_person, message) == (456, True, "updated")
+                assert create_payloads == [{"phone": "", "email": "jane@example.com"}]
+                service.people.update_person.assert_called_once_with(
+                    456, {"phone": "555-1212", "email": "jane@example.com"}
+                )
+
+    def test_find_or_create_donation_returns_existing_donation(self, mock_config_provider):
+        """Test donation helper preserves existing-donation semantics."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.donation = Mock()
+                service.donation.get_donationid_by_params.return_value = (
+                    789,
+                    True,
+                    "already exists",
+                )
+
+                donation_data = {
+                    "succeeded_at": "2025-01-01T17:43:11-05:00",
+                    "check_number": "PP_123",
+                }
+
+                donation_id, existed, message = service._find_or_create_donation(111, donation_data)
+
+                assert (donation_id, existed, message) == (789, True, "Donation already existed")
+                service.donation.create_donation.assert_not_called()
+
+    def test_record_successful_row_writes_ids_and_existing_message(self, mock_config_provider):
+        """Test success-row helper writes IDs and only keeps message for existing donations."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                row = {"Email": "john@example.com"}
+
+                with patch.object(service, "_append_row_to_file") as mock_append:
+                    service._record_successful_row(
+                        "success.csv",
+                        row,
+                        ["Email", "NB Donation ID", "NB People ID", "NB Error Message"],
+                        "utf-8",
+                        123,
+                        456,
+                        "Donation already existed",
+                        True,
+                    )
+
+                assert row["NB Donation ID"] == 123
+                assert row["NB People ID"] == 456
+                assert row["NB Error Message"] == "Donation already existed"
+                mock_append.assert_called_once()
+
+    def test_handle_processing_failure_deletes_created_person_when_donation_fails(
+        self, mock_config_provider
+    ):
+        """Test failure helper cleans up created people and continues on successful cleanup."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                service.people = Mock()
+                service.people.delete_person.return_value = (True, "deleted")
+
+                row = {"Email": "john@example.com", "NB Error Message": "donation failed"}
+                donation_data_row = Mock()
+                donation_data_row.data = {}
+
+                with patch.object(service, "_append_row_to_file") as mock_append:
+                    should_continue = service._handle_processing_failure(
+                        "fail.csv",
+                        row,
+                        ["Email", "NB Error Message"],
+                        "utf-8",
+                        donation_data_row,
+                        True,
+                        False,
+                        456,
+                        "donation failed",
+                    )
+
+                assert should_continue is True
+                service.people.delete_person.assert_called_once_with(456)
+                mock_append.assert_called_once()
+
+    def test_handle_unexpected_row_failure_records_prefixed_message(self, mock_config_provider):
+        """Test unexpected-failure helper writes a prefixed error message."""
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                row = {"Email": "john@example.com"}
+
+                with patch.object(service, "_append_row_to_file") as mock_append:
+                    service._handle_unexpected_row_failure(
+                        "fail.csv",
+                        row,
+                        ["Email", "NB Error Message"],
+                        "utf-8",
+                        RuntimeError("boom"),
+                    )
+
+                assert row["NB Error Message"] == "Unexpected error: boom"
+                mock_append.assert_called_once()
