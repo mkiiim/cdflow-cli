@@ -155,6 +155,18 @@ class TestImportLogExtractor:
         log_file = extractor._get_current_api_log_file()
         assert log_file in ["APP_20250917_123456.log", "API_APP_20250916_123456.log"]
 
+    def test_get_current_api_log_file_fallback_logs_legacy_selection(self, extractor, mock_paths, caplog):
+        """Test heuristic fallback warns when it selects a legacy API_APP log."""
+        extractor.logging_provider = None
+
+        (mock_paths.logs / "API_APP_20250918_123456.log").touch()
+
+        log_file = extractor._get_current_api_log_file()
+
+        assert log_file == "API_APP_20250918_123456.log"
+        assert "falling back to heuristic current-log discovery" in caplog.text
+        assert "selected legacy API_APP log file" in caplog.text
+
     def test_extract_timestamp_valid(self, extractor):
         """Test extracting valid timestamp from log line."""
         line = "2025-09-17 08:39:36,066 INFO test log message"

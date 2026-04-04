@@ -180,7 +180,9 @@ def run_cli(config=None, logging_provider=None) -> int:
         early_logging_provider = FileLoggingProvider(base_path="./logs", console_level="INFO")
         early_logging_provider.initialize_bootstrap_logging()
         logger = early_logging_provider.get_logger(__name__)
-        logger.debug("Fallback: Bootstrap logging initialized")
+        logger.warning(
+            "run_cli called without bootstrap providers; using compatibility bootstrap fallback"
+        )
         logging_provider = early_logging_provider
     else:
         logger = logging_provider.get_logger(__name__)
@@ -197,6 +199,9 @@ def run_cli(config=None, logging_provider=None) -> int:
 
         # If no providers given, we need to handle fallback initialization
         if not all([config, logging_provider]):
+            logger.warning(
+                "compatibility bootstrap fallback is resolving config and logging inside run_cli"
+            )
             # Get config file path from command-line arguments or prompt
             args = parse_arguments()
             config_path = args.config

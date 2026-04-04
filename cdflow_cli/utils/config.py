@@ -440,11 +440,17 @@ class ConfigProvider:
                 elif "canadahelps" in yaml_config and yaml_config.get("canadahelps"):
                     input_file = yaml_config["canadahelps"].get("input_file")
                     if input_file:
+                        logger.warning(
+                            "using legacy config import shape 'canadahelps.input_file'; migrate to cli_import.type/file"
+                        )
                         self.import_settings["source_type"] = "canadahelps"
                         self.import_settings["input_file"] = input_file
                 elif "paypal" in yaml_config and yaml_config.get("paypal"):
                     input_file = yaml_config["paypal"].get("input_file")
                     if input_file:
+                        logger.warning(
+                            "using legacy config import shape 'paypal.input_file'; migrate to cli_import.type/file"
+                        )
                         self.import_settings["source_type"] = "paypal"
                         self.import_settings["input_file"] = input_file
 
@@ -522,9 +528,6 @@ class ConfigProvider:
 
         # Generate CORS origins based on user configuration
         self._generate_cors_origins(deployment_config, user_hostname, user_api_port, user_frontend_port)
-
-        # Load OAuth credentials and adjust for deployment
-        self._load_oauth_credentials(deployment_config, user_hostname, user_frontend_port)
 
     def _detect_deployment_type(self) -> str:
         """
@@ -610,15 +613,6 @@ class ConfigProvider:
 
         cors_config["origins"] = list(set(origins_patterns))
         logger.debug(f"Generated CORS origins/patterns: {cors_config['origins']}")
-
-    def _load_oauth_credentials(
-        self, deployment_config: Dict[str, Any], user_hostname: str, user_frontend_port: int
-    ):
-        """
-        OAuth credentials are now loaded exclusively from environment variables.
-        This method is kept for backward compatibility but does nothing.
-        """
-        logger.debug("OAuth credentials loaded from environment variables only")
 
     def _adjust_oauth_for_deployment(self, deployment_config: Dict[str, Any], deployment_type: str):
         """

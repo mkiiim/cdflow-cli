@@ -207,7 +207,9 @@ class ImportLogExtractor:
             logger.debug("No logging provider available or method not supported")
 
         # Fallback to heuristic method if logging provider method not available
-        logger.debug("Using heuristic fallback to find current log file")
+        logger.warning(
+            "falling back to heuristic current-log discovery; logging provider did not supply the active log file"
+        )
         try:
             # List API log files using paths system
             # Look for both APP_*.log (unified logging) and API_APP_*.log (legacy) files
@@ -218,7 +220,12 @@ class ImportLogExtractor:
             if log_files:
                 # Return the most recent log file
                 fallback_log = sorted(log_files)[-1]
-                logger.debug(f"Using heuristic fallback log file: {fallback_log}")
+                if fallback_log.startswith("API_APP_"):
+                    logger.warning(
+                        f"heuristic log discovery selected legacy API_APP log file: {fallback_log}"
+                    )
+                else:
+                    logger.warning(f"heuristic log discovery selected log file: {fallback_log}")
                 return fallback_log
             return None
         except Exception as e:

@@ -19,6 +19,7 @@ from cdflow_cli.cli.commands_import import (
     get_import_settings,
     monitor_cli_job,
     run_cli_with_jobs,
+    run_cli,
     main
 )
 
@@ -594,3 +595,77 @@ class TestMainFunction:
         assert hasattr(mock_config, '_cli_override')
         assert mock_config._cli_override['type'] == 'paypal'
         assert mock_config._cli_override['file'] == 'override.csv'
+
+
+class TestRunCliFallback:
+    """Test provider-less compatibility fallback behavior."""
+
+    @patch('cdflow_cli.cli.commands_import.run_cli_with_jobs', return_value=0)
+    @patch('cdflow_cli.cli.commands_import.start_fresh_output')
+    @patch('cdflow_cli.utils.config_paths.resolve_config_path')
+    @patch('cdflow_cli.cli.commands_import.parse_arguments')
+    @patch('cdflow_cli.cli.commands_import.get_logging_provider')
+    @patch('cdflow_cli.cli.commands_import.ConfigProvider')
+    @patch('cdflow_cli.cli.commands_import.FileLoggingProvider')
+    @patch('cdflow_cli.utils.paths.initialize_paths')
+    @patch('cdflow_cli.jobs.JobManager')
+    def test_run_cli_logs_warnings_when_bootstrap_fallback_used(
+        self,
+        mock_job_manager_cls,
+        mock_initialize_paths,
+        mock_file_logging_provider_cls,
+        mock_config_provider_cls,
+        mock_get_logging_provider,
+        mock_parse_arguments,
+        mock_resolve_config_path,
+        mock_start_fresh_output,
+        mock_run_cli_with_jobs,
+    ):
+        """Test provider-less run_cli emits compatibility fallback warnings."""
+        early_provider = Mock()
+        early_logger = Mock()
+        early_provider.get_logger.return_value = early_logger
+        mock_file_logging_provider_cls.return_value = early_provider
+
+        args = Mock()
+        args.config = "config.yaml"
+        mock_parse_arguments.return_value = args
+
+        resolved_path = Mock()
+        resolved_path.exists.return_value = True
+        mock_resolve_config_path.return_value = resolved_path
+
+        config = Mock()
+        config.get_logging_config.return_value = {"file_level": "DEBUG"}
+        config.get_app_setting.side_effect = lambda path, default=None: default
+        config.get_oauth_config.return_value = {
+            "slug": "test",
+            "client_id": "id",
+            "client_secret": "secret",
+        }
+        mock_config_provider_cls.return_value = config
+
+        configured_provider = Mock()
+        configured_provider.get_logger.return_value = early_logger
+        mock_get_logging_provider.return_value = configured_provider
+        mock_initialize_paths.return_value = Mock()
+        mock_job_manager_cls.return_value = Mock()
+
+        with patch('cdflow_cli.adapters.nationbuilder.NationBuilderOAuth') as mock_oauth_cls:
+            oauth_instance = Mock()
+            oauth_instance.initialize.return_value = True
+            oauth_instance.nb_jwt_token = "access-token"
+            oauth_instance.nb_refresh_token = "refresh-token"
+            oauth_instance.nb_token_expires_in = 3600
+            oauth_instance.nb_token_created_at = 1234567890
+            mock_oauth_cls.return_value = oauth_instance
+
+            result = run_cli()
+
+        assert result == 0
+        early_logger.warning.assert_any_call(
+            "run_cli called without bootstrap providers; using compatibility bootstrap fallback"
+        )
+        early_logger.warning.assert_any_call(
+            "compatibility bootstrap fallback is resolving config and logging inside run_cli"
+        )
