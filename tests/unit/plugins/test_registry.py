@@ -1,5 +1,6 @@
 import pytest
 from cdflow_cli.plugins.registry import (
+    build_plugin_bundle,
     register_plugin,
     get_plugins,
     clear_registry,
@@ -189,3 +190,20 @@ class TestPluginRegistry:
         plugins = get_plugins("custom_adapter")
         assert len(plugins) == 1
         assert plugins[0][0] == "custom_plugin"
+
+    def test_build_plugin_bundle_groups_plugins_by_type(self):
+        """Test building a resolved plugin bundle from current registry state."""
+        @register_plugin("paypal", "row_transformer")
+        def transformer(row_data: dict) -> dict:
+            return row_data
+
+        @register_plugin("paypal", "person_lookup")
+        def person_lookup(donation, people_client, default_lookup):
+            return default_lookup()
+
+        bundle = build_plugin_bundle("paypal")
+
+        assert bundle.adapter == "paypal"
+        assert [name for name, _func in bundle.all_plugins] == ["transformer", "person_lookup"]
+        assert [name for name, _func in bundle.by_type["row_transformer"]] == ["transformer"]
+        assert [name for name, _func in bundle.by_type["person_lookup"]] == ["person_lookup"]

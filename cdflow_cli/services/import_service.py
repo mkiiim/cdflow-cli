@@ -830,7 +830,7 @@ class DonationImportService:
                 progress_callback(0, f"Error: {str(e)}")
             return 0, 0
 
-    def _load_plugins_if_configured(self, adapter: str) -> int:
+    def _load_plugins_if_configured(self, adapter: str):
         """
         Load plugins for an adapter if configured.
 
@@ -838,37 +838,38 @@ class DonationImportService:
             adapter: Adapter name (canadahelps, paypal)
 
         Returns:
-            int: Number of plugins loaded
+            PluginBundle: Resolved plugin bundle snapshot for the adapter
         """
         from pathlib import Path
-        from ..plugins.loader import load_plugins
+        from ..plugins.loader import load_plugin_bundle
+        from ..plugins.registry import build_plugin_bundle
 
         # Get plugin configuration from top-level 'plugins' section
         plugins_config = self.config.yaml_config.get("plugins", {})
         if not isinstance(plugins_config, dict):
             logger.info(f"No plugins configured for {adapter} (plugins section not found in config)")
-            return 0
+            return build_plugin_bundle(adapter)
 
         adapter_plugins = plugins_config.get(adapter, {})
         if not isinstance(adapter_plugins, dict):
             logger.info(f"No plugins configured for {adapter} (adapter not in plugins config)")
-            return 0
+            return build_plugin_bundle(adapter)
 
         plugins_enabled = adapter_plugins.get("enabled", False)
         plugins_dir = adapter_plugins.get("dir")
 
         if not plugins_enabled:
             logger.info(f"Plugins disabled for {adapter} (enabled=false or not set)")
-            return 0
+            return build_plugin_bundle(adapter)
 
         if not plugins_dir:
             logger.info(f"No plugins dir configured for {adapter}")
-            return 0
+            return build_plugin_bundle(adapter)
 
         plugins_path = Path(plugins_dir).expanduser()
         logger.debug(f"Plugin directory configured: {plugins_dir} -> {plugins_path}")
 
-        return load_plugins(adapter, plugins_path)
+        return load_plugin_bundle(adapter, plugins_path)
 
     def _lookup_person_with_plugins(self, donation_data_row, adapter: str):
         """

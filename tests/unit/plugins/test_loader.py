@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from cdflow_cli.plugins.loader import load_plugins
+from cdflow_cli.plugins.loader import load_plugin_bundle, load_plugins
 from cdflow_cli.plugins.registry import get_plugins, clear_registry
 
 
@@ -262,6 +262,25 @@ def pp_plugin(row_data: dict) -> dict:
         assert len(pp_plugins) == 1
         assert ch_plugins[0][0] == "ch_plugin"
         assert pp_plugins[0][0] == "pp_plugin"
+
+    def test_load_plugin_bundle_returns_resolved_plugins(self, tmp_path):
+        """Test that loader can return an explicit bundle snapshot."""
+        plugins_dir = tmp_path / "plugins"
+        plugins_dir.mkdir()
+
+        plugin_code = '''
+from cdflow_cli.plugins.registry import register_plugin
+
+@register_plugin("paypal", "person_lookup")
+def fallback_lookup(donation, people_client, default_lookup):
+    return default_lookup()
+'''
+        (plugins_dir / "lookup.py").write_text(plugin_code)
+
+        bundle = load_plugin_bundle("paypal", plugins_dir)
+
+        assert [name for name, _func in bundle.all_plugins] == ["fallback_lookup"]
+        assert [name for name, _func in bundle.by_type["person_lookup"]] == ["fallback_lookup"]
 
     def test_load_plugins_ignores_non_py_files(self, tmp_path):
         """Test that non-.py files are ignored."""

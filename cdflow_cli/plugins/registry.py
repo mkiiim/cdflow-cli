@@ -5,6 +5,7 @@ Provides decorator-based registration system for plugins that can transform
 donation data at different stages of processing.
 """
 
+from dataclasses import dataclass
 from typing import Callable, Literal
 
 PluginType = Literal["row_transformer", "field_processor", "donation_validator", "person_lookup"]
@@ -13,6 +14,15 @@ _registry: dict[str, list[tuple[str, PluginType, Callable]]] = {
     "canadahelps": [],
     "paypal": []
 }
+
+
+@dataclass(frozen=True)
+class PluginBundle:
+    """Resolved plugin collection for a single adapter run."""
+
+    adapter: str
+    all_plugins: list[tuple[str, Callable]]
+    by_type: dict[PluginType, list[tuple[str, Callable]]]
 
 
 def register_plugin(adapter: str, plugin_type: PluginType):
@@ -57,6 +67,25 @@ def get_plugins(adapter: str, plugin_type: PluginType = None) -> list[tuple[str,
     if plugin_type:
         return [(name, func) for name, ptype, func in plugins if ptype == plugin_type]
     return [(name, func) for name, _, func in plugins]
+
+
+def build_plugin_bundle(adapter: str) -> PluginBundle:
+    """
+    Build a resolved plugin bundle from the current registry state.
+
+    Args:
+        adapter: Adapter name
+
+    Returns:
+        PluginBundle: Snapshot of current plugins for the adapter
+    """
+    by_type: dict[PluginType, list[tuple[str, Callable]]] = {
+        "row_transformer": get_plugins(adapter, "row_transformer"),
+        "field_processor": get_plugins(adapter, "field_processor"),
+        "donation_validator": get_plugins(adapter, "donation_validator"),
+        "person_lookup": get_plugins(adapter, "person_lookup"),
+    }
+    return PluginBundle(adapter=adapter, all_plugins=get_plugins(adapter), by_type=by_type)
 
 
 def clear_registry(adapter: str = None):
