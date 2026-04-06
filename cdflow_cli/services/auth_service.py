@@ -120,17 +120,14 @@ class UnifiedAuthService:
 
     def _update_auth_state_from_oauth(self) -> None:
         """Update internal auth state from OAuth instance."""
-        if self.oauth.nb_jwt_token:
+        self.oauth._sync_token_state_from_legacy_attrs()
+        token_state = self.oauth.token_state
+
+        if token_state.has_tokens():
             self._auth_state.is_authenticated = True
-            self._auth_state.access_token = self.oauth.nb_jwt_token
-            self._auth_state.refresh_token = self.oauth.nb_refresh_token
-
-            # Calculate expiration time
-            if self.oauth.nb_token_created_at and self.oauth.nb_token_expires_in:
-                self._auth_state.expires_at = (
-                    self.oauth.nb_token_created_at + self.oauth.nb_token_expires_in
-                )
-
+            self._auth_state.access_token = token_state.access_token
+            self._auth_state.refresh_token = token_state.refresh_token
+            self._auth_state.expires_at = token_state.expires_at
             self._auth_state.error = None
             logger.debug("Updated auth state from OAuth instance")
         else:
@@ -204,7 +201,8 @@ class UnifiedAuthService:
     def get_auth_state(self) -> AuthState:
         """Get the current authentication state."""
         # Ensure state is up-to-date
-        if self.oauth.nb_jwt_token and not self._auth_state.is_authenticated:
+        self.oauth._sync_token_state_from_legacy_attrs()
+        if self.oauth.token_state.has_tokens() and not self._auth_state.is_authenticated:
             self._update_auth_state_from_oauth()
         return self._auth_state
 
@@ -227,6 +225,7 @@ class UnifiedAuthService:
         logger.debug("Invalidating authentication state")
 
         # Clear OAuth tokens
+        self.oauth.token_state.clear()
         self.oauth.nb_jwt_token = None
         self.oauth.nb_refresh_token = None
         self.oauth.nb_token_created_at = None
@@ -263,6 +262,17 @@ class UnifiedAuthService:
             bool: True if we have a valid token
         """
         return self.get_access_token() is not None
+
+    def get_token_payload(self) -> Dict[str, Any]:
+        """Return the current token payload in the legacy dict shape used by CLI jobs."""
+        self.oauth._sync_token_state_from_legacy_attrs()
+        token_state = self.oauth.token_state
+        return {
+            "access_token": token_state.access_token,
+            "refresh_token": token_state.refresh_token,
+            "expires_in": token_state.token_set.expires_in if token_state.token_set else None,
+            "created_at": token_state.token_set.created_at if token_state.token_set else None,
+        }
 
 
 def create_auth_service(

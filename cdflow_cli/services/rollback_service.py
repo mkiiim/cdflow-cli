@@ -12,9 +12,10 @@ import json
 import logging
 from typing import Dict, Any, Tuple
 
-from ..adapters.nationbuilder import NationBuilderOAuth, NBPeople, NBDonation
+from ..adapters.nationbuilder import NBPeople, NBDonation
 from ..adapters.canadahelps import CHDonationMapper
 from ..adapters.paypal import PPDonationMapper
+from ..services.auth_service import create_cli_auth_service
 from ..utils.config import ConfigProvider
 from ..utils.logging import LoggingProvider
 
@@ -76,21 +77,22 @@ class DonationRollbackService:
                     f"Added default callback_port for CLI context: {deployment_api_port}"
                 )
 
-            # Create OAuth instance
-            self.nboauth = NationBuilderOAuth(oauth_config, auto_initialize=False)
+            self.nboauth = create_cli_auth_service(oauth_config)
 
             # Initialize OAuth to get tokens
             self.logger.debug("Initializing OAuth token for rollback service")
-            if not self.nboauth.initialize():
+            if not self.nboauth.authenticate():
                 self.logger.error("Failed to initialize OAuth token")
                 return False
 
+            oauth_instance = self.nboauth.get_oauth_instance()
+
             # Create API client instances
-            self.people = NBPeople(self.nboauth)
-            self.donation = NBDonation(self.nboauth)
+            self.people = NBPeople(oauth=oauth_instance)
+            self.donation = NBDonation(oauth=oauth_instance)
 
             # Store nation slug for display
-            self.nation_slug = self.nboauth.slug
+            self.nation_slug = oauth_instance.slug
             self.logger.debug(f"API clients initialized successfully. Nation: {self.nation_slug}")
 
             return True

@@ -203,8 +203,8 @@ def run_cli(config=None, logging_provider=None) -> int:
         paths = initialize_paths(config)
         logger.debug(f"Paths system initialized: {paths}")
 
-        # Initialize NationBuilderOAuth and get tokens for CLI job system
-        from ..adapters.nationbuilder import NationBuilderOAuth
+        # Initialize CLI auth orchestration and get tokens for the job system
+        from ..services.auth_service import create_cli_auth_service
 
         # Ensure redirect_uri and callback_port are present for CLI context
         # These values are not functionally used by the CLI, but are required by NationBuilderOAuth constructor
@@ -237,22 +237,15 @@ def run_cli(config=None, logging_provider=None) -> int:
                 f"Logo deployment failed, OAuth will continue but logos may not display correctly: {e}"
             )
 
-        nboauth = NationBuilderOAuth(oauth_config_to_use, auto_initialize=False)
+        auth_service = create_cli_auth_service(oauth_config_to_use)
 
         logger.debug("Explicitly initializing OAuth token for CLI job system")
-        if not nboauth.initialize():
+        if not auth_service.authenticate():
             logger.error("Failed to initialize OAuth token for CLI job system")
             return 1
 
-        oauth_tokens = {
-            "access_token": nboauth.nb_jwt_token,
-            "refresh_token": nboauth.nb_refresh_token,
-            "expires_in": nboauth.nb_token_expires_in,
-            "created_at": nboauth.nb_token_created_at,
-        }
-        logger.debug(
-            f"OAuth tokens obtained for CLI job system (access token ends with ...{oauth_tokens['access_token'][-5:]})"
-        )
+        oauth_tokens = auth_service.get_token_payload()
+        logger.debug("OAuth tokens obtained for CLI job system")
 
         # Always use job system - legacy direct processing removed
         logger.debug("CLI using job system for processing")

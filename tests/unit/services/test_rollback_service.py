@@ -62,24 +62,27 @@ class TestDonationRollbackService:
     
     @patch('cdflow_cli.services.rollback_service.NBPeople')
     @patch('cdflow_cli.services.rollback_service.NBDonation')
-    @patch('cdflow_cli.services.rollback_service.NationBuilderOAuth')
-    def test_initialize_apis(self, mock_oauth, mock_donation, mock_people, mock_config_provider, mock_logging_provider):
+    @patch('cdflow_cli.services.rollback_service.create_cli_auth_service')
+    def test_initialize_apis(self, mock_create_auth_service, mock_donation, mock_people, mock_config_provider, mock_logging_provider):
         """Test API initialization."""
         service = DonationRollbackService(mock_config_provider, mock_logging_provider)
         
-        # Mock the OAuth flow
-        mock_auth = Mock()
-        mock_auth.initialize.return_value = True
-        mock_auth.slug = 'test-nation'
-        mock_oauth.return_value = mock_auth
+        # Mock the auth flow
+        mock_oauth = Mock()
+        mock_oauth.slug = 'test-nation'
+        mock_auth_service = Mock()
+        mock_auth_service.authenticate.return_value = True
+        mock_auth_service.get_oauth_instance.return_value = mock_oauth
+        mock_create_auth_service.return_value = mock_auth_service
         
         # Test the current method name
         result = service.initialize_api_clients()
         
         assert result is True
-        mock_oauth.assert_called_once()
-        mock_people.assert_called_once()
-        mock_donation.assert_called_once()
+        mock_create_auth_service.assert_called_once()
+        mock_auth_service.authenticate.assert_called_once()
+        mock_people.assert_called_once_with(oauth=mock_oauth)
+        mock_donation.assert_called_once_with(oauth=mock_oauth)
     
     def test_validate_config_success(self, mock_config_provider, mock_logging_provider):
         """Test successful configuration validation."""

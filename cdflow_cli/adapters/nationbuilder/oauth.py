@@ -17,6 +17,13 @@ import logging
 import secrets
 from functools import wraps
 from typing import Any, Dict, Optional, Union
+from urllib.parse import parse_qs, urlparse
+
+from ...nationbuilder_auth_core.errors import TokenExchangeError, TokenRefreshError
+from ...nationbuilder_auth_core.models import OAuthConfig, TokenSet
+from ...nationbuilder_auth_core.token_client import NationBuilderTokenClient
+from ...nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
+from ...nationbuilder_auth_core.token_state import InMemoryTokenState
 
 logger = logging.getLogger(__name__)
 
@@ -115,21 +122,10 @@ class CallbackHandler(BaseHTTPRequestHandler):
         success_html = self.get_success_html()
         self.wfile.write(success_html.encode("utf-8"))
 
-        if "?code=" in self.path:
-            code_segment = self.path.split("?code=")[1]
-            code = code_segment.split("&")[0] if "&" in code_segment else code_segment
-            self.server.callback_code = code
-
-            # Extract state parameter if present
-            if "state=" in self.path:
-                state_segment = self.path.split("state=")[1]
-                state = state_segment.split("&")[0] if "&" in state_segment else state_segment
-                self.server.callback_state = state
-            else:
-                self.server.callback_state = None
-        else:
-            self.server.callback_code = None
-            self.server.callback_state = None
+        parsed = urlparse(self.path)
+        query = parse_qs(parsed.query)
+        self.server.callback_code = query.get("code", [None])[0]
+        self.server.callback_state = query.get("state", [None])[0]
 
     def log_message(self, format: str, *args: Any) -> None:
         """Suppress default logging of HTTP requests."""
@@ -176,6 +172,15 @@ class NationBuilderOAuth:
 
         # For state parameter validation
         self.current_state = None
+        self._core_oauth_config = OAuthConfig(
+            slug=self.slug,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            redirect_uri=self.redirect_uri,
+        )
+        self.token_state = InMemoryTokenState()
+        self.token_client = NationBuilderTokenClient(self._core_oauth_config, session=requests)
+        self.token_provider = NationBuilderTokenProvider(self.token_state, self.token_client)
 
         logger.debug(f"OAuth configuration loaded successfully. Nation slug: {self.slug}")
 
@@ -192,13 +197,15 @@ class NationBuilderOAuth:
             bool: True if initialization succeeded, False otherwise
         """
         logger.debug("Explicitly initializing OAuth token")
+        self._sync_token_state_from_legacy_attrs()
 
-        # Check if we already have valid tokens
-        if self.nb_jwt_token is not None and self.token_is_valid():
-            logger.debug("Already have valid tokens, skipping initialization")
-            return True
+        if self.token_state.has_tokens():
+            access_token = self.token_provider.get_access_token()
+            if access_token:
+                self._sync_legacy_attrs_from_token_state()
+                logger.debug("Already have valid tokens, skipping initialization")
+                return True
 
-        # Otherwise, get a new access token
         access_token = self.get_access_token()
 
         return access_token is not None
@@ -297,48 +304,15 @@ class NationBuilderOAuth:
             logger.error("Error: Failed to get authorization code.")
             return None
 
-        token_url = f"https://{self.slug}.nationbuilder.com/oauth/token"
-        data = {
-            "grant_type": "authorization_code",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "redirect_uri": self.redirect_uri,
-            "code": authorization_code,
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        # Get access token
         try:
-            logger.debug(f"Requesting access token from {token_url}")
-            response = requests.post(token_url, headers=headers, data=data)
-            response.raise_for_status()
-
-            token_data = response.json()
-
-            # Store tokens in instance variables
-            self.nb_jwt_token = token_data.get("access_token")
-            self.nb_refresh_token = token_data.get("refresh_token")
-            self.nb_token_expires_in = token_data.get("expires_in")
-            self.nb_token_created_at = token_data.get("created_at")
-
-            # Also store in class variables for backward compatibility
-            NationBuilderOAuth.nb_jwt_token = self.nb_jwt_token
-            NationBuilderOAuth.nb_refresh_token = self.nb_refresh_token
-            NationBuilderOAuth.nb_token_expires_in = self.nb_token_expires_in
-            NationBuilderOAuth.nb_token_created_at = self.nb_token_created_at
-
-            logger.debug(
-                f"Successfully obtained NB JWT token ending in ...{self.nb_jwt_token[-5:]}"
-            )
-            logger.debug(f"Refresh token ending in ...{self.nb_refresh_token[-5:]}")
-            logger.debug(f"Token expires in {self.nb_token_expires_in} seconds")
-
+            logger.debug("Requesting access token from NationBuilder token endpoint")
+            token_set = self.token_client.exchange_code(authorization_code)
+            self._set_token_set(token_set)
+            logger.debug("Successfully obtained NationBuilder access token")
             return self.nb_jwt_token
 
-        except requests.exceptions.RequestException as e:
+        except TokenExchangeError as e:
             logger.error(f"Error exchanging code for token: {e}")
-            if hasattr(e, "response") and e.response:
-                logger.error(f"Response: {e.response.text}")
             return None
 
     def refresh_access_token(self) -> Optional[str]:
@@ -349,7 +323,8 @@ class NationBuilderOAuth:
             str or None: Access token if successful, None otherwise
         """
 
-        if not self.nb_refresh_token:
+        refresh_token = self.nb_refresh_token or self.token_state.refresh_token
+        if not refresh_token:
             logger.error("No refresh token available")
             return None
 
@@ -365,49 +340,18 @@ class NationBuilderOAuth:
         else:
             logger.info(f"DEBUG - Token refresh triggered: missing token metadata")
 
-        token_url = f"https://{self.slug}.nationbuilder.com/oauth/token"
-        data = {
-            "grant_type": "refresh_token",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "refresh_token": self.nb_refresh_token,
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        # Get access token
         try:
-            logger.debug(f"Refreshing access token from {token_url}")
-            response = requests.post(token_url, headers=headers, data=data)
-            response.raise_for_status()
-
-            token_data = response.json()
-            
-            # Store tokens in instance variables
-            self.nb_jwt_token = token_data.get("access_token")
-            self.nb_refresh_token = token_data.get("refresh_token")
-            self.nb_token_expires_in = token_data.get("expires_in")
-            self.nb_token_created_at = token_data.get("created_at")
-
-            # Also store in class variables for backward compatibility
-            NationBuilderOAuth.nb_jwt_token = self.nb_jwt_token
-            NationBuilderOAuth.nb_refresh_token = self.nb_refresh_token
-            NationBuilderOAuth.nb_token_expires_in = self.nb_token_expires_in
-            NationBuilderOAuth.nb_token_created_at = self.nb_token_created_at
-
+            logger.debug("Refreshing access token from NationBuilder token endpoint")
+            token_set = self.token_client.refresh_token(refresh_token)
+            self._set_token_set(token_set)
             logger.info(
                 f"DEBUG - Token refresh successful: new token expires in {self.nb_token_expires_in} seconds"
             )
-            logger.debug(
-                f"Successfully refreshed NB JWT token ending in ...{self.nb_jwt_token[-5:]}"
-            )
-            logger.debug(f"Refresh token ending in ...{self.nb_refresh_token[-5:]}")
-
+            logger.debug("Successfully refreshed NationBuilder access token")
             return self.nb_jwt_token
 
-        except requests.exceptions.RequestException as e:
+        except TokenRefreshError as e:
             logger.error(f"Error refreshing token: {e}")
-            if hasattr(e, "response") and e.response:
-                logger.error(f"Response: {e.response.text}")
             return None
 
     def token_is_valid(self) -> bool:
@@ -417,28 +361,23 @@ class NationBuilderOAuth:
         Returns:
             bool: True if the token exists and is decodable, False otherwise
         """
+        self._sync_token_state_from_legacy_attrs()
         if self.nb_jwt_token is None:
             logger.debug("DEBUG - Token validation: No token available")
             return False
 
-        # Check expiration using stored token metadata (more reliable than JWT exp field)
         logger.debug(f"DEBUG - Token validation metadata: created_at={self.nb_token_created_at}, expires_in={self.nb_token_expires_in}")
-        if self.nb_token_created_at and self.nb_token_expires_in:
-            current_time = time.time()
-            expires_at = self.nb_token_created_at + self.nb_token_expires_in
-            time_until_expiry = expires_at - current_time
-
-            # Refresh if token expires in less than 60 seconds
+        if self.token_state.expires_at is not None:
+            time_until_expiry = self.token_state.expires_at - time.time()
             if time_until_expiry <= 60:
                 logger.info(
                     f"DEBUG - Token validation: Token expires soon ({time_until_expiry:.1f}s), needs refresh"
                 )
                 return False
-            else:
-                logger.debug(
-                    f"DEBUG - Token validation: Token valid, expires in {time_until_expiry:.1f} seconds"
-                )
-                return True
+            logger.debug(
+                f"DEBUG - Token validation: Token valid, expires in {time_until_expiry:.1f} seconds"
+            )
+            return True
 
         try:
             # Fallback: check if token can be decoded (for tokens without metadata)
@@ -494,6 +433,7 @@ class NationBuilderOAuth:
             logger.debug(f"DEBUG - OAuth decorator called for {func.__name__}")
 
             if oauth_instance:
+                oauth_instance._sync_token_state_from_legacy_attrs()
                 # Use instance variables if available (preferred method)
                 if oauth_instance.nb_jwt_token is None:
                     logger.info(
@@ -529,3 +469,44 @@ class NationBuilderOAuth:
             return func(self, *args, **kwargs)
 
         return wrapper
+
+    def _sync_token_state_from_legacy_attrs(self) -> None:
+        """Keep the new token state aligned with legacy mutable attributes."""
+        self.token_state.now_fn = time.time
+        if not self.nb_jwt_token:
+            if self.token_state.has_tokens():
+                self.token_state.clear()
+            return
+
+        token_set = TokenSet(
+            access_token=self.nb_jwt_token,
+            refresh_token=self.nb_refresh_token,
+            expires_in=self.nb_token_expires_in,
+            created_at=self.nb_token_created_at,
+        )
+        if self.token_state.token_set != token_set:
+            self.token_state.set_tokens(token_set)
+
+    def _sync_legacy_attrs_from_token_state(self) -> None:
+        """Keep legacy instance and class attributes aligned with token state."""
+        token_set = self.token_state.token_set
+        if token_set is None:
+            self.nb_jwt_token = None
+            self.nb_refresh_token = None
+            self.nb_token_expires_in = None
+            self.nb_token_created_at = None
+        else:
+            self.nb_jwt_token = token_set.access_token
+            self.nb_refresh_token = token_set.refresh_token
+            self.nb_token_expires_in = token_set.expires_in
+            self.nb_token_created_at = token_set.created_at
+
+        NationBuilderOAuth.nb_jwt_token = self.nb_jwt_token
+        NationBuilderOAuth.nb_refresh_token = self.nb_refresh_token
+        NationBuilderOAuth.nb_token_expires_in = self.nb_token_expires_in
+        NationBuilderOAuth.nb_token_created_at = self.nb_token_created_at
+
+    def _set_token_set(self, token_set: TokenSet) -> None:
+        """Replace current token state and synchronize legacy compatibility fields."""
+        self.token_state.set_tokens(token_set)
+        self._sync_legacy_attrs_from_token_state()
