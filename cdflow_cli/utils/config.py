@@ -470,32 +470,39 @@ class ConfigProvider:
         Works with any hostname, port, or deployment scenario - makes no assumptions.
         """
         deployment_config = yaml_config.get("deployment", {})
-        deployment_pattern = deployment_config.get("pattern", "local")
-        user_hostname = deployment_config.get("hostname", "localhost")
-        # The frontend_port is the primary, user-facing port for network modes.
-        user_frontend_port = deployment_config.get("frontend_port", 8008)
+        deployment_pattern = deployment_config.get("pattern")
+        valid_patterns = {"local", "network", "container"}
+        if deployment_pattern not in valid_patterns:
+            raise ValueError(
+                f"deployment.pattern must be one of {sorted(valid_patterns)}; got {deployment_pattern!r}"
+            )
 
-        # Respect the user's api_port setting for all deployment modes
-        user_api_port = deployment_config.get("api_port", 8000)
+        required_fields = ["hostname", "api_port", "frontend_port"]
+        missing_fields = [field for field in required_fields if deployment_config.get(field) in [None, ""]]
+        if missing_fields:
+            raise ValueError(
+                f"deployment is missing required fields: {', '.join(missing_fields)}"
+            )
+
+        user_hostname = deployment_config["hostname"]
+        user_frontend_port = deployment_config["frontend_port"]
+        user_api_port = deployment_config["api_port"]
 
         logger.debug(
             f"Processing deployment-agnostic settings - pattern: {deployment_pattern}, hostname: {user_hostname}"
         )
 
+        bind_host = "0.0.0.0" if deployment_pattern in {"network", "container"} else "localhost"
+        frontend_host = "0.0.0.0" if deployment_pattern in {"network", "container"} else user_hostname
+
         # Resolve API settings with 'auto' values
         if "api" in self.app_settings:
             api_config = self.app_settings["api"]
 
-            # Resolve API host based on deployment pattern (not specific deployment)
             if api_config.get("host") == "auto":
-                if deployment_pattern == "network":
-                    api_config["host"] = "0.0.0.0"  # Bind to all interfaces for network access
-                    logger.debug(f"Resolved API host to '0.0.0.0' for {deployment_pattern} pattern")
-                else:  # local pattern
-                    api_config["host"] = "localhost"
-                    logger.debug("Resolved API host to 'localhost' for local pattern")
+                api_config["host"] = bind_host
+                logger.debug(f"Resolved API host to '{bind_host}' for {deployment_pattern} pattern")
 
-            # Use user-specified API port
             if api_config.get("port") == "auto":
                 api_config["port"] = user_api_port
                 logger.debug(f"Using user-specified API port: {user_api_port}")
@@ -504,19 +511,12 @@ class ConfigProvider:
         if "frontend" in self.app_settings:
             frontend_config = self.app_settings["frontend"]
 
-            # Frontend host resolution - deployment pattern agnostic
             if frontend_config.get("host") == "auto":
-                if deployment_pattern == "network":
-                    frontend_config["host"] = "0.0.0.0"  # Network needs to bind to all
-                    logger.debug("Resolved frontend host to '0.0.0.0' for network pattern")
-                else:
-                    # Use user-specified hostname for network/local patterns
-                    frontend_config["host"] = user_hostname
-                    logger.debug(
-                        f"Resolved frontend host to '{user_hostname}' for {deployment_pattern} pattern"
-                    )
+                frontend_config["host"] = frontend_host
+                logger.debug(
+                    f"Resolved frontend host to '{frontend_host}' for {deployment_pattern} pattern"
+                )
 
-            # Use user-specified frontend port
             if frontend_config.get("port") == "auto":
                 frontend_config["port"] = user_frontend_port
                 logger.debug(f"Using user-specified frontend port: {user_frontend_port}")
@@ -718,11 +718,11 @@ class ConfigProvider:
                 deployment_config = self.yaml_config.get("deployment", {})
                 user_hostname = deployment_config.get("hostname", "localhost")
                 user_api_port = deployment_config.get("api_port", 8000)
-                
+
                 callback_url = f"http://{user_hostname}:{user_api_port}/callback"
                 oauth_config["redirect_uri"] = callback_url
                 oauth_config["callback_port"] = user_api_port
-                
+
                 logger.debug(f"Auto-generated OAuth redirect_uri: {callback_url}")
             
             return oauth_config
