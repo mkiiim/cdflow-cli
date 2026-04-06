@@ -396,40 +396,46 @@ class TestParseRollbackArguments:
     def test_parse_rollback_arguments_with_config(self):
         """Test parsing with config argument provided."""
         test_args = ['--config', 'config.yaml']
-        
+
         with patch.object(sys, 'argv', ['command'] + test_args):
-            config_path = parse_rollback_arguments()
-            
-            assert config_path == 'config.yaml'
+            options = parse_rollback_arguments()
+
+            assert options.success_file is None
+            assert options.output_dir is None
+            assert options.yes is False
     
     def test_parse_rollback_arguments_without_config(self):
         """Test parsing without config argument."""
         test_args = []
-        
+
         with patch.object(sys, 'argv', ['command'] + test_args):
-            config_path = parse_rollback_arguments()
-            
-            assert config_path is None
+            options = parse_rollback_arguments()
+
+            assert options.success_file is None
+            assert options.output_dir is None
+            assert options.yes is False
     
     def test_parse_rollback_arguments_config_with_value(self):
         """Test parsing config argument with explicit value."""
-        test_args = ['--config', '/path/to/config.yaml']
-        
+        test_args = ['--config', '/path/to/config.yaml', '--success-file', '/tmp/success.csv', '--output-dir', '/tmp/out', '--yes']
+
         with patch.object(sys, 'argv', ['command'] + test_args):
-            config_path = parse_rollback_arguments()
-            
-            assert config_path == '/path/to/config.yaml'
+            options = parse_rollback_arguments()
+
+            assert options.success_file == '/tmp/success.csv'
+            assert options.output_dir == '/tmp/out'
+            assert options.yes is True
     
     def test_parse_rollback_arguments_config_no_value(self):
         """Test parsing config argument without value (nargs='?')."""
-        # This tests the nargs='?' behavior
         test_args = ['--config']
-        
+
         with patch.object(sys, 'argv', ['command'] + test_args):
-            config_path = parse_rollback_arguments()
-            
-            # With nargs='?', this should return None when no value provided
-            assert config_path is None
+            options = parse_rollback_arguments()
+
+            assert options.success_file is None
+            assert options.output_dir is None
+            assert options.yes is False
 
 
 class TestPromptForRollbackConfirmation:
@@ -673,6 +679,9 @@ class TestMainFunction:
         args = Mock()
         args.config = 'config.yaml'
         args.log_level = 'INFO'
+        args.success_file = None
+        args.output_dir = None
+        args.yes = False
         mock_parse.return_value = args
         # Setup component initialization
         mock_config = Mock()
@@ -686,7 +695,7 @@ class TestMainFunction:
         
         assert result == 0
         mock_initialize.assert_called_once_with('config.yaml', 'INFO', require_existing_config=True)
-        mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider)
+        mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider, success_file=None, output_dir=None, auto_confirm=False)
     
     @patch('cdflow_cli.cli.commands_rollback.initialize_cli_components')
     @patch('argparse.ArgumentParser.parse_args')

@@ -15,7 +15,7 @@ import logging
 import argparse
 import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple, List, NamedTuple
 from io import StringIO
 
 from cdflow_cli.utils import start_fresh_output, clear_screen
@@ -28,6 +28,47 @@ from ..utils.file_utils import safe_read_text_file
 
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
+
+
+class RollbackCliOptions(NamedTuple):
+    success_file: Optional[str]
+    output_dir: Optional[str]
+    yes: bool
+
+
+def resolve_success_file_path(selected_file: str, paths) -> Path:
+    """Resolve an explicit or menu-selected success file to a concrete path."""
+    candidate = Path(selected_file).expanduser()
+    if candidate.is_absolute():
+        return candidate
+
+    matches = []
+    cwd_candidate = (Path.cwd() / candidate).resolve()
+    if cwd_candidate.exists():
+        matches.append(cwd_candidate)
+
+    if paths:
+        output_candidate = (paths.output / candidate).resolve()
+        if output_candidate.exists() and output_candidate not in matches:
+            matches.append(output_candidate)
+
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError(
+            f"Ambiguous success file path '{selected_file}'. Use an absolute path or a path unique to one location."
+        )
+
+    if paths:
+        return (paths.output / candidate).resolve()
+    return cwd_candidate
+
+
+def resolve_output_directory(output_dir: Optional[str], paths) -> Path:
+    """Resolve the output directory for rollback results."""
+    if output_dir:
+        return Path(output_dir).expanduser().resolve()
+    return paths.output
 
 
 def get_encoding(file_path: str, paths=None) -> Tuple[str, float]:
@@ -107,7 +148,9 @@ def determine_import_type_from_header(header: str) -> Optional[str]:
         return None
 
 
-def initialize_output_file(filename: str, fieldnames: List[str], encoding: str, paths) -> None:
+def initialize_output_file(
+    filename: str, fieldnames: List[str], encoding: str, paths, output_dir: Optional[Path] = None
+) -> None:
     """
     Initialize rollback output file with headers.
 
@@ -118,7 +161,8 @@ def initialize_output_file(filename: str, fieldnames: List[str], encoding: str, 
         paths: Paths system
     """
     try:
-        output_file_path = paths.output / filename
+        output_root = output_dir or paths.output
+        output_file_path = output_root / filename
         output_file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Create CSV content
@@ -136,7 +180,12 @@ def initialize_output_file(filename: str, fieldnames: List[str], encoding: str, 
 
 
 def append_row_to_file(
-    filename: str, row: Dict[str, Any], fieldnames: List[str], encoding: str, paths
+    filename: str,
+    row: Dict[str, Any],
+    fieldnames: List[str],
+    encoding: str,
+    paths,
+    output_dir: Optional[Path] = None,
 ) -> None:
     """
     Append a row to the rollback output file.
@@ -149,7 +198,8 @@ def append_row_to_file(
         paths: Paths system
     """
     try:
-        output_file_path = paths.output / filename
+        output_root = output_dir or paths.output
+        output_file_path = output_root / filename
 
         # Create CSV content for this row
         csv_output = StringIO()
@@ -165,19 +215,22 @@ def append_row_to_file(
         raise
 
 
-def parse_rollback_arguments() -> Optional[str]:
+def parse_rollback_arguments() -> RollbackCliOptions:
     """
     Parse command line arguments for rollback tool.
 
     Returns:
-        str or None: Path to config file if provided, None otherwise
+        RollbackCliOptions: Parsed rollback CLI options
     """
     parser = argparse.ArgumentParser(
         description="DonationFlow rollback donations from NationBuilder"
     )
     parser.add_argument("--config", nargs="?", help="Path to DonationFlow config YAML file")
+    parser.add_argument("--success-file", help="Explicit success CSV to use for rollback")
+    parser.add_argument("--output-dir", help="Directory to write rollback result CSVs to")
+    parser.add_argument("--yes", action="store_true", help="Skip interactive confirmation prompts")
     args = parser.parse_args()
-    return args.config
+    return RollbackCliOptions(args.success_file, args.output_dir, args.yes)
 
 
 def prompt_for_rollback_confirmation(
@@ -216,14 +269,15 @@ def prompt_for_rollback_confirmation(
 
 
 def process_rollback_data(
-    rows: List[Dict[str, Any]], 
-    import_type: str, 
+    rows: List[Dict[str, Any]],
+    import_type: str,
     rollback_service: DonationRollbackService,
     rollback_filename: str,
     reader_fieldnames: List[str],
     encoding: str,
     paths,
-    logger
+    logger,
+    output_dir: Optional[Path] = None,
 ) -> Tuple[int, int]:
     """
     Process rollback data for donations - core business logic extracted for testability.
@@ -266,12 +320,18 @@ def process_rollback_data(
 
         # Add error message to row and write to output
         row["NB Error Message"] = message
-        append_row_to_file(rollback_filename, row, reader_fieldnames, encoding, paths)
+        append_row_to_file(rollback_filename, row, reader_fieldnames, encoding, paths, output_dir=output_dir)
     
     return success_count, fail_count
 
 
-def run_rollback_cli(config=None, logging_provider=None) -> int:
+def run_rollback_cli(
+    config=None,
+    logging_provider=None,
+    success_file: Optional[str] = None,
+    output_dir: Optional[str] = None,
+    auto_confirm: bool = False,
+) -> int:
     """
     Run the command-line interface for donation rollback.
 
@@ -320,37 +380,38 @@ def run_rollback_cli(config=None, logging_provider=None) -> int:
             return 1
         logger.notice("✅ Authentication successful")
 
-        # Get success CSV files
-        success_files = get_success_csv_files(paths)
+        if success_file:
+            selected_file = success_file
+            logger.notice(f"✅ Using explicit success file: {selected_file}")
+        else:
+            success_files = get_success_csv_files(paths)
 
-        if not success_files:
-            logger.error("❌ No _success.csv files found in output directory")
+            if not success_files:
+                logger.error("❌ No _success.csv files found in output directory")
+                return 1
+
+            logger.notice(f"✅ Found {len(success_files)} success file(s)")
+            logger.info(f"{'─'*60}")
+
+            if not auto_confirm:
+                input("Press Enter to continue, CTRL-C to abort...\n")
+
+            menu = FileSelectionMenu(
+                title="Select a CSV file to process:", file_pattern="*_success.csv"
+            )
+
+            selected_file = menu.show_menu(success_files)
+            if not selected_file:
+                logger.info("No file selected. Exiting.")
+                return 1
+
+        file_path = resolve_success_file_path(selected_file, paths)
+        if not file_path.exists():
+            logger.error(f"❌ Success file not found: {file_path}")
             return 1
 
-        logger.notice(f"✅ Found {len(success_files)} success file(s)")
-        logger.info(f"{'─'*60}")
-
-        # Pause for user input
-        input("Press Enter to continue, CTRL-C to abort...\n")
-
-        # Display file selection menu
-        menu = FileSelectionMenu(
-            title="Select a CSV file to process:", file_pattern="*_success.csv"
-        )
-
-        selected_file = menu.show_menu(success_files)
-        if not selected_file:
-            logger.info("No file selected. Exiting.")
-            return 1
-
-        # Determine file encoding
-        encoding, confidence = get_encoding(selected_file, paths)
+        encoding, confidence = get_encoding(str(file_path), None)
         logger.debug(f"Detected encoding: {encoding} (confidence: {confidence:.2f})")
-
-        # Read and analyze file
-        file_path = Path(selected_file)
-        if not file_path.is_absolute():
-            file_path = paths.output / selected_file
 
         file_content = safe_read_text_file(file_path)
         first_line = file_content.split("\n")[0]
@@ -376,8 +437,10 @@ def run_rollback_cli(config=None, logging_provider=None) -> int:
         logger.info(f"{'─'*60}")
 
         # Confirm rollback operation
-        if not prompt_for_rollback_confirmation(
-            rollback_service.nation_slug, selected_file, import_type
+        if auto_confirm:
+            logger.notice("✅ Confirmation skipped via --yes")
+        elif not prompt_for_rollback_confirmation(
+            rollback_service.nation_slug, str(file_path), import_type
         ):
             return 1
 
@@ -396,11 +459,14 @@ def run_rollback_cli(config=None, logging_provider=None) -> int:
 
         # Generate rollback output file
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        rollback_filename = f"{Path(selected_file).stem}_rollback_{timestamp}.csv"
+        rollback_filename = f"{file_path.stem}_rollback_{timestamp}.csv"
+        resolved_output_dir = resolve_output_directory(output_dir, paths)
 
         # Initialize output file
-        initialize_output_file(rollback_filename, reader.fieldnames, encoding, paths)
-        logger.info(f"📝 Rollback results will be written to: {paths.output / rollback_filename}")
+        initialize_output_file(
+            rollback_filename, reader.fieldnames, encoding, paths, output_dir=resolved_output_dir
+        )
+        logger.info(f"📝 Rollback results will be written to: {resolved_output_dir / rollback_filename}")
         logger.info(f"{'─'*60}")
 
         # Process the core rollback business logic (now extracted and testable)
@@ -412,7 +478,8 @@ def run_rollback_cli(config=None, logging_provider=None) -> int:
             reader_fieldnames=reader.fieldnames,
             encoding=encoding,
             paths=paths,
-            logger=logger
+            logger=logger,
+            output_dir=resolved_output_dir,
         )
 
         # Display summary with formatting
@@ -458,6 +525,19 @@ def main(argv=None):
         choices=STANDARD_LOG_LEVEL_CHOICES,
         help="Logging level",
     )
+    parser.add_argument(
+        "--success-file",
+        help="Explicit success CSV to use for rollback (skips file discovery/menu)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        help="Directory to write rollback result CSVs to (default: configured output path)",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip interactive confirmation prompt once inputs are resolved",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -470,7 +550,13 @@ def main(argv=None):
         print(f"Configuration file not found: {exc}")
         return 1
 
-    return run_rollback_cli(config, logging_provider)
+    return run_rollback_cli(
+        config,
+        logging_provider,
+        success_file=getattr(args, "success_file", None),
+        output_dir=getattr(args, "output_dir", None),
+        auto_confirm=getattr(args, "yes", False),
+    )
 
 
 if __name__ == "__main__":

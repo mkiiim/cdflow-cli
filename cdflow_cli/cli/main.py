@@ -115,6 +115,19 @@ Examples:
         choices=["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR"],
         help="Console log level - NOTICE shows important milestones, ERROR shows only errors (default: INFO)",
     )
+    rollback_parser.add_argument(
+        "--success-file",
+        help="Explicit success CSV to use for rollback (skips file discovery/menu)",
+    )
+    rollback_parser.add_argument(
+        "--output-dir",
+        help="Directory to write rollback result CSVs to (default: configured output path)",
+    )
+    rollback_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip interactive confirmation prompt once inputs are resolved",
+    )
 
     args = parser.parse_args()
 
@@ -141,6 +154,12 @@ Examples:
         import_main(subcommand_args)
     elif args.command == "rollback":
         subcommand_args = ["--config", args.config, "--log-level", args.log_level]
+        if getattr(args, "success_file", None):
+            subcommand_args.extend(["--success-file", args.success_file])
+        if getattr(args, "output_dir", None):
+            subcommand_args.extend(["--output-dir", args.output_dir])
+        if getattr(args, "yes", False):
+            subcommand_args.append("--yes")
         rollback_main(subcommand_args)
     else:
         parser.print_help()
