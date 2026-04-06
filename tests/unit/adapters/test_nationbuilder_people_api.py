@@ -766,12 +766,11 @@ class TestNBPeople:
             assert success is False
             assert "Response handling error" in message
     
-    def test_all_methods_use_oauth_decorator(self, people_client):
-        """Test that all API methods use the OAuth decorator."""
-        # Get all methods that should have the decorator
+    def test_all_methods_use_explicit_header_refresh_contract(self, people_client):
+        """Test that API methods rely on explicit client header refresh instead of decorator wrapping."""
         api_methods = [
             'get_personid_by_email',
-            'get_personid_by_phone', 
+            'get_personid_by_phone',
             'get_persons_by_params',
             'get_personid_by_extid',
             'get_person_by_id',
@@ -779,11 +778,16 @@ class TestNBPeople:
             'update_person',
             'delete_person'
         ]
-        
+
         for method_name in api_methods:
             method = getattr(people_client, method_name)
-            # Check if method has the decorator applied
-            assert hasattr(method, '__wrapped__'), f"Method {method_name} should have OAuth decorator"
+            assert callable(method)
+            assert not hasattr(method, '__wrapped__'), (
+                f"Method {method_name} should not rely on legacy decorator wrapping"
+            )
+
+        assert hasattr(type(people_client), '_update_headers')
+
 
 
 if __name__ == "__main__":

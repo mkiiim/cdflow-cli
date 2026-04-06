@@ -309,34 +309,24 @@ class TestNBMembership:
             assert success is False
             assert message == "Bad request"
     
-    def test_all_methods_use_oauth_decorator(self, membership_client):
-        """Test that all API methods use the OAuth decorator."""
-        # Get all methods that should have the decorator
+    def test_all_methods_use_explicit_header_refresh_contract(self, membership_client):
+        """Test that API methods rely on explicit client header refresh instead of decorator wrapping."""
         api_methods = [
             'get_membershipinfo_by_signup_nationbuilder_id',
             'set_active_monthly_membership',
             'get_membershipid_by_params',
             'create_membership'
         ]
-        
+
         for method_name in api_methods:
             method = getattr(membership_client, method_name)
-            # Check if method has the decorator applied
-            assert hasattr(method, '__wrapped__'), f"Method {method_name} should have OAuth decorator"
-    
-    def test_param_value_pairs_string_generation(self, membership_client):
-        """Test parameter string generation for API calls."""
-        # This tests the param_value_pairs_str logic used in get_membershipid_by_params
-        params = {"status": "active", "person_id": "12345", "started_at": "2024-01-01"}
-        
-        # Simulate the string generation logic
-        param_value_pairs_str = "&".join([f"{param_name}={param_value}" for param_name, param_value in params.items()])
-        
-        # Verify it contains all parameters
-        assert "status=active" in param_value_pairs_str
-        assert "person_id=12345" in param_value_pairs_str
-        assert "started_at=2024-01-01" in param_value_pairs_str
-        assert param_value_pairs_str.count("&") == 2  # Two separators for three params
+            assert callable(method)
+            assert not hasattr(method, '__wrapped__'), (
+                f"Method {method_name} should not rely on legacy decorator wrapping"
+            )
+
+        assert hasattr(type(membership_client), '_update_headers')
+
 
 
 if __name__ == "__main__":

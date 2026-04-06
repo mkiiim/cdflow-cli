@@ -480,20 +480,24 @@ class TestNBDonation:
             assert success is False
             assert "Response handling error" in message
     
-    def test_all_methods_use_oauth_decorator(self, donation_client):
-        """Test that all API methods use the OAuth decorator."""
-        # Get all methods that should have the decorator
+    def test_all_methods_use_explicit_header_refresh_contract(self, donation_client):
+        """Test that API methods rely on explicit client header refresh instead of decorator wrapping."""
         api_methods = [
             'get_donationid_by_params',
             'create_donation',
             'detect_custom_donation_fields',
             'delete_donation'
         ]
-        
+
         for method_name in api_methods:
             method = getattr(donation_client, method_name)
-            # Check if method has the decorator applied
-            assert hasattr(method, '__wrapped__'), f"Method {method_name} should have OAuth decorator"
+            assert callable(method)
+            assert not hasattr(method, '__wrapped__'), (
+                f"Method {method_name} should not rely on legacy decorator wrapping"
+            )
+
+        assert hasattr(type(donation_client), '_update_headers')
+
 
 
 if __name__ == "__main__":
