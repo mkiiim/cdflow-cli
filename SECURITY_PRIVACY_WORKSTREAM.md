@@ -10,7 +10,23 @@ The CLI OAuth implementation is workable for a trusted operator environment, but
 2. tokens are stored in process-global class variables for backward compatibility
 3. access and refresh token suffixes are logged in several places
 4. redirect URI generation is topology-coupled and defaults to insecure HTTP callback URLs
-5. outbound API/token requests do not set explicit network timeouts
+5. some auth ownership still routes through the legacy `NationBuilderOAuth` wrapper
+
+## Status Since The Auth-Core Refactor
+The following items are partially or fully improved already:
+
+1. callback query parsing
+- no longer manual string-splitting
+- now uses structured URL parsing in `oauth.py`
+
+2. request timeouts
+- shared token exchange/refresh and the rewired NationBuilder adapters now use explicit timeouts
+- this finding is no longer "timeouts are absent everywhere"
+- it is now "complete timeout coverage is not yet guaranteed until the remaining legacy paths are removed"
+
+3. shared token primitives
+- token exchange, refresh, token state, and provider/session behavior now live in `nationbuilder_auth_core`
+- this reduced risk, but did not remove the legacy wrapper yet
 
 I do not see a fundamentally broken OAuth state check. State generation and validation exist and are materially better than having no CSRF protection. The sharper problems are exposure surface and token hygiene.
 
@@ -99,17 +115,18 @@ Recommended direction:
 - default CLI callback URI to loopback-only, e.g. `http://127.0.0.1:<port>/callback`
 - treat non-loopback callback hostnames as explicit operator overrides, not defaults
 
-### 5. Medium: Outbound requests do not use explicit timeouts
+### 5. Medium: Timeout coverage is improved but not fully complete until legacy paths are removed
 Relevant code:
-- `cdflow_cli/adapters/nationbuilder/oauth.py:313`
-- `cdflow_cli/adapters/nationbuilder/oauth.py:380`
-- representative API calls:
-  - `cdflow_cli/adapters/nationbuilder/people_api.py:33`
-  - `cdflow_cli/adapters/nationbuilder/donation_api.py:38`
-  - `cdflow_cli/adapters/nationbuilder/signups_api.py:46`
+- `cdflow_cli/nationbuilder_auth_core/token_client.py`
+- `cdflow_cli/adapters/nationbuilder/client.py`
+- representative API calls in rewired adapters:
+  - `cdflow_cli/adapters/nationbuilder/people_api.py`
+  - `cdflow_cli/adapters/nationbuilder/donation_api.py`
+  - `cdflow_cli/adapters/nationbuilder/signups_api.py`
 
 Current behavior:
-- `requests` calls do not specify `timeout=`
+- the shared token client and rewired API adapters now use explicit request timeouts
+- remaining risk comes from legacy ownership paths that still depend on `NationBuilderOAuth`
 
 Why this matters:
 - network hangs can block the CLI indefinitely
@@ -120,19 +137,18 @@ Recommended direction:
 - add explicit connect/read timeouts to all NationBuilder HTTP requests
 - centralize timeout policy if possible
 
-### 6. Medium: Callback parameter parsing is manual and brittle
+### 6. Low: Callback parameter parsing has been corrected
 Relevant code:
-- `cdflow_cli/adapters/nationbuilder/oauth.py:118-127`
+- `cdflow_cli/adapters/nationbuilder/oauth.py`
 
 Current behavior:
-- callback `code` and `state` are extracted via string splitting on `self.path`
+- callback `code` and `state` are parsed with `urlparse` and `parse_qs`
 
 Why this matters:
-- works for the happy path, but is brittle compared with standard URL parsing
-- easier to mis-handle encoding or unusual query-string shapes
+- this specific issue is no longer an active remediation item
+- it is retained here as a completed hardening note
 
 Recommended direction:
-- use `urllib.parse.urlparse` and `parse_qs`
 - keep validation explicit and structured
 
 ### 7. Medium-Low: Callback listener returns success page before validating callback contents
