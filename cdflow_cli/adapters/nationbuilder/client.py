@@ -22,29 +22,22 @@ class NBClient:
     Provides common functionality for all API client classes.
     """
 
-    def __init__(self, oauth=None, token_provider=None, request_timeout=DEFAULT_TIMEOUT):
+    def __init__(self, token_provider, request_timeout=DEFAULT_TIMEOUT):
         """
         Initialize the client with NationBuilder auth credentials.
 
         Args:
-            oauth: Legacy NationBuilderOAuth instance with valid credentials
-            token_provider: New runtime-neutral token provider
+            token_provider: Runtime-neutral token provider
             request_timeout: Shared request timeout for NationBuilder API calls
         """
-        if oauth is None and token_provider is None:
-            raise ValueError("NBClient requires either oauth or token_provider")
+        if token_provider is None:
+            raise ValueError("NBClient requires token_provider")
 
-        # Transitional compatibility seam.
-        # Remove legacy oauth= support after all NationBuilder adapters are rewired to token_provider.
-        self.oauth = oauth
         self.token_provider = token_provider
         self.request_timeout = request_timeout
-        self.authorized_session = (
-            NationBuilderAuthorizedSession(token_provider) if token_provider is not None else None
-        )
+        self.authorized_session = NationBuilderAuthorizedSession(token_provider)
 
-        identity_source = oauth if oauth is not None else token_provider.token_client.oauth_config
-        self.nation_slug = identity_source.slug
+        self.nation_slug = token_provider.token_client.oauth_config.slug
 
         self.access_token = self._resolve_access_token()
         self.headers = self._build_headers(self.access_token)
@@ -69,11 +62,7 @@ class NBClient:
 
     def _resolve_access_token(self):
         """Resolve an access token from the available auth source."""
-        if self.token_provider is not None:
-            return self.token_provider.get_access_token()
-        if self.oauth is not None:
-            return self.oauth.nb_jwt_token
-        return None
+        return self.token_provider.get_access_token()
 
     @staticmethod
     def _build_headers(access_token):

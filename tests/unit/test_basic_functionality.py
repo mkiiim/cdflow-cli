@@ -4,6 +4,11 @@ Basic functionality tests that verify the core CLI components work.
 import pytest
 from unittest.mock import Mock, patch
 
+from cdflow_cli.nationbuilder_auth_core.models import OAuthConfig, TokenSet
+from cdflow_cli.nationbuilder_auth_core.token_client import NationBuilderTokenClient
+from cdflow_cli.nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
+from cdflow_cli.nationbuilder_auth_core.token_state import InMemoryTokenState
+
 
 class TestBasicImports:
     """Test that we can import the main components."""
@@ -83,11 +88,22 @@ class TestNBClient:
         """Test NBClient can be created."""
         from cdflow_cli.adapters.nationbuilder.client import NBClient
         
-        mock_oauth = Mock()
-        mock_oauth.nb_jwt_token = 'test-token'
-        mock_oauth.slug = 'test-nation'
-        
-        client = NBClient(mock_oauth)
+        state = InMemoryTokenState(now_fn=lambda: 1000)
+        state.set_tokens(TokenSet(access_token='test-token', created_at=1000, expires_in=600))
+        token_provider = NationBuilderTokenProvider(
+            state,
+            NationBuilderTokenClient(
+                OAuthConfig(
+                    slug='test-nation',
+                    client_id='client-id',
+                    client_secret='client-secret',
+                    redirect_uri='http://127.0.0.1:8801/callback',
+                ),
+                session=Mock(),
+            ),
+        )
+
+        client = NBClient(token_provider=token_provider)
         assert client.nation_slug == 'test-nation'
         assert client.access_token == 'test-token'
         assert 'Authorization' in client.headers

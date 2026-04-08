@@ -14,17 +14,14 @@ logger = logging.getLogger(__name__)
 class NBPeople(NBClient):
     """Client for interacting with the NationBuilder People API."""
 
-    def __init__(self, oauth=None, token_provider=None):
+    def __init__(self, token_provider):
         """
         Initialize the People API client.
 
         Args:
-            oauth: Legacy NationBuilderOAuth instance with valid credentials
-            token_provider: New runtime-neutral token provider
+            token_provider: Runtime-neutral token provider
         """
-        # Transitional compatibility seam.
-        # Remove oauth= support after callers are migrated to token_provider.
-        super().__init__(oauth=oauth, token_provider=token_provider)
+        super().__init__(token_provider=token_provider)
         self.base_url = f"{self.base_url}/people"
 
     def get_personid_by_email(self, email):

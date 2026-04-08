@@ -8,28 +8,36 @@ from unittest.mock import Mock, patch, MagicMock
 import requests
 import json
 from cdflow_cli.adapters.nationbuilder.people_api import NBPeople
-from cdflow_cli.adapters.nationbuilder.oauth import NationBuilderOAuth
+from cdflow_cli.nationbuilder_auth_core.models import OAuthConfig, TokenSet
+from cdflow_cli.nationbuilder_auth_core.token_client import NationBuilderTokenClient
+from cdflow_cli.nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
+from cdflow_cli.nationbuilder_auth_core.token_state import InMemoryTokenState
 
 
 class TestNBPeople:
     """Test NationBuilder People API client."""
     
     @pytest.fixture
-    def mock_oauth(self):
-        """Mock OAuth instance."""
-        oauth = Mock(spec=NationBuilderOAuth)
-        oauth.slug = "test-nation"  # Required by NBClient
-        oauth.nb_nation_slug = "test-nation"
-        oauth.nb_jwt_token = "test-jwt-token"
-        oauth.nb_refresh_token = "test-refresh-token"
-        oauth.nb_token_expires_in = 3600
-        oauth.nb_token_created_at = 1234567890
-        return oauth
+    def token_provider(self):
+        state = InMemoryTokenState(now_fn=lambda: 1000)
+        state.set_tokens(TokenSet(access_token="test-jwt-token", created_at=1000, expires_in=3600))
+        return NationBuilderTokenProvider(
+            state,
+            NationBuilderTokenClient(
+                OAuthConfig(
+                    slug="test-nation",
+                    client_id="client-id",
+                    client_secret="client-secret",
+                    redirect_uri="http://127.0.0.1:8801/callback",
+                ),
+                session=Mock(),
+            ),
+        )
     
     @pytest.fixture
-    def people_client(self, mock_oauth):
-        """Create NBPeople client with mocked OAuth."""
-        return NBPeople(mock_oauth)
+    def people_client(self, token_provider):
+        """Create NBPeople client with token provider."""
+        return NBPeople(token_provider=token_provider)
     
     def test_init_sets_base_url(self, people_client):
         """Test that initialization sets correct base URL."""
