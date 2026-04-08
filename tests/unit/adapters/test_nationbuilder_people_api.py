@@ -11,7 +11,6 @@ from cdflow_cli.adapters.nationbuilder.people_api import NBPeople
 from cdflow_cli.adapters.nationbuilder.oauth import NationBuilderOAuth
 
 
-@patch('cdflow_cli.adapters.nationbuilder.oauth.NationBuilderOAuth.ensure_valid_nb_jwt', lambda x: x)
 class TestNBPeople:
     """Test NationBuilder People API client."""
     

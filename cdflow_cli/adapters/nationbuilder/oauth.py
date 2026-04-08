@@ -15,7 +15,6 @@ import requests
 import time
 import logging
 import secrets
-from functools import wraps
 from typing import Any, Dict, Optional, Union
 from urllib.parse import parse_qs, urlparse
 
@@ -137,13 +136,6 @@ class NationBuilderOAuth:
     Handles OAuth authentication for NationBuilder API.
     Manages token acquisition and validation.
     """
-
-    # Class variables to maintain backward compatibility
-    # These will be synchronized with instance variables
-    nb_jwt_token = None
-    nb_refresh_token = None
-    nb_token_created_at = None
-    nb_token_expires_in = None
 
     def __init__(self, config: Dict, auto_initialize: bool = False):
         """
@@ -412,65 +404,6 @@ class NationBuilderOAuth:
         except Exception as e:
             logger.debug(f"DEBUG - Token validation: Token invalid - {str(e)}")
             return False
-
-    @staticmethod
-    def ensure_valid_nb_jwt(func):
-        """
-        Decorator to ensure that the NationBuilder JWT token is valid before making a request.
-        Works with both instance variables and class variables for backward compatibility.
-
-        Args:
-            func: Function to decorate
-
-        Returns:
-            callable: Decorated function
-        """
-        # Compatibility-only: no remaining runtime code path uses this decorator directly.
-        # Keep it in place until external or test consumers are explicitly removed.
-
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            oauth_instance = getattr(self, "oauth", None)
-
-            logger.debug(f"DEBUG - OAuth decorator called for {func.__name__}")
-
-            if oauth_instance:
-                oauth_instance._sync_token_state_from_legacy_attrs()
-                # Use instance variables if available (preferred method)
-                if oauth_instance.nb_jwt_token is None:
-                    logger.info(
-                        f"DEBUG - OAuth: Token not initialized for {func.__name__}, initializing now"
-                    )
-                    oauth_instance.initialize()
-                elif not oauth_instance.token_is_valid():
-                    logger.info(f"DEBUG - OAuth: Token expired for {func.__name__}, refreshing now")
-                    oauth_instance.refresh_access_token()
-                else:
-                    logger.debug(f"DEBUG - OAuth: Token valid for {func.__name__}, proceeding")
-
-                # Update headers with the latest token from the instance
-                if hasattr(self, "_update_headers") and callable(self._update_headers):
-                    self._update_headers()
-                else:
-                    # Fall back to direct header update
-                    self.headers = {"Authorization": f"Bearer {oauth_instance.nb_jwt_token}"}
-
-            else:
-                # Fall back to class variables for backward compatibility (CLI tool)
-                if NationBuilderOAuth.nb_jwt_token is None:
-                    logger.info(
-                        f"DEBUG - OAuth: Class token not initialized for {func.__name__}, but no oauth instance available"
-                    )
-                    # Without an instance, we can't initialize - this is a potential issue point
-                    # For CLI, this would need to be handled elsewhere
-                else:
-                    # Use existing class token (already initialized by CLI)
-                    logger.debug(f"DEBUG - OAuth: Using class token for {func.__name__}")
-                    self.headers = {"Authorization": f"Bearer {NationBuilderOAuth.nb_jwt_token}"}
-
-            return func(self, *args, **kwargs)
-
-        return wrapper
 
     def _sync_token_state_from_legacy_attrs(self) -> None:
         """Keep the new token state aligned with legacy mutable attributes."""

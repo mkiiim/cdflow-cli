@@ -240,15 +240,6 @@ class UnifiedAuthService:
         state = self.get_auth_state()
         return state.is_authenticated and not state.is_expired
 
-    def get_oauth_instance(self) -> NationBuilderOAuth:
-        """
-        Get the underlying OAuth instance for backward compatibility.
-
-        Returns:
-            NationBuilderOAuth: The OAuth instance
-        """
-        return self.oauth
-
     def get_token_provider(self) -> NationBuilderTokenProvider:
         """
         Get the shared-core token provider owned by the auth service.

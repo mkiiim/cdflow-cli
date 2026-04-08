@@ -321,9 +321,6 @@ class TestNationBuilderOAuth:
             assert oauth_client.nb_refresh_token == "refresh_token_456"
             assert oauth_client.nb_token_expires_in == 3600
             assert oauth_client.nb_token_created_at == 1234567890
-            
-            # Class-global fields are no longer the operational sync target
-            assert NationBuilderOAuth.nb_jwt_token != "jwt_token_123"
     
     def test_get_access_token_no_auth_code(self, oauth_client):
         """Test access token retrieval when auth code fails."""
@@ -441,139 +438,23 @@ class TestNationBuilderOAuth:
             assert result is False
             mock_logger.debug.assert_called()
     
-    def test_ensure_valid_nb_jwt_decorator_with_oauth_instance(self, oauth_client):
-        """Test OAuth decorator with oauth instance."""
-        # Create a mock API client with oauth instance
-        mock_client = Mock()
-        mock_client.oauth = oauth_client
-        oauth_client.nb_jwt_token = "valid_token"
-        
-        # Mock the decorated function
-        @NationBuilderOAuth.ensure_valid_nb_jwt
-        def mock_api_method(self):
-            return "success"
-        
-        with patch.object(oauth_client, 'token_is_valid', return_value=True), \
-             patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
-            
-            result = mock_api_method(mock_client)
-            
-            assert result == "success"
-            mock_logger.debug.assert_called()
-    
-    def test_ensure_valid_nb_jwt_decorator_token_expired(self, oauth_client):
-        """Test OAuth decorator when token is expired."""
-        mock_client = Mock()
-        mock_client.oauth = oauth_client
-        oauth_client.nb_jwt_token = "expired_token"
-        
-        @NationBuilderOAuth.ensure_valid_nb_jwt
-        def mock_api_method(self):
-            return "success"
-        
-        with patch.object(oauth_client, 'token_is_valid', return_value=False), \
-             patch.object(oauth_client, 'refresh_access_token', return_value="new_token"), \
-             patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
-            
-            result = mock_api_method(mock_client)
-            
-            assert result == "success"
-            mock_logger.info.assert_called()
-    
-    def test_ensure_valid_nb_jwt_decorator_no_token(self, oauth_client):
-        """Test OAuth decorator when no token exists."""
-        mock_client = Mock()
-        mock_client.oauth = oauth_client
-        oauth_client.nb_jwt_token = None
-        
-        @NationBuilderOAuth.ensure_valid_nb_jwt
-        def mock_api_method(self):
-            return "success"
-        
-        with patch.object(oauth_client, 'initialize', return_value=True), \
-             patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
-            
-            result = mock_api_method(mock_client)
-            
-            assert result == "success"
-            mock_logger.info.assert_called()
-    
-    def test_ensure_valid_nb_jwt_decorator_no_oauth_instance(self):
-        """Test OAuth decorator without oauth instance (class variable fallback)."""
-        mock_client = Mock()
-        mock_client.oauth = None
-        
-        # Set class variables
-        NationBuilderOAuth.nb_jwt_token = "class_token"
-        
-        @NationBuilderOAuth.ensure_valid_nb_jwt
-        def mock_api_method(self):
-            return "success"
-        
-        try:
-            with patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
-                result = mock_api_method(mock_client)
-                
-                assert result == "success"
-                mock_logger.debug.assert_called()
-        finally:
-            # Clean up class variables
-            NationBuilderOAuth.nb_jwt_token = None
-    
-    def test_ensure_valid_nb_jwt_decorator_no_oauth_no_class_token(self):
-        """Test OAuth decorator without oauth instance and no class token."""
-        mock_client = Mock()
-        mock_client.oauth = None
-        
-        # Ensure class variables are None
-        NationBuilderOAuth.nb_jwt_token = None
-        
-        @NationBuilderOAuth.ensure_valid_nb_jwt
-        def mock_api_method(self):
-            return "success"
-        
-        with patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
-            result = mock_api_method(mock_client)
-            
-            assert result == "success"
-            mock_logger.info.assert_called()
-
-    def test_sync_legacy_attrs_from_token_state_does_not_update_class_globals(self, oauth_client):
-        """Test token-state sync updates only instance legacy attrs, not class-global attrs."""
-        original_class_token = NationBuilderOAuth.nb_jwt_token
-        original_refresh = NationBuilderOAuth.nb_refresh_token
-        original_created = NationBuilderOAuth.nb_token_created_at
-        original_expires = NationBuilderOAuth.nb_token_expires_in
-
-        NationBuilderOAuth.nb_jwt_token = "class-token"
-        NationBuilderOAuth.nb_refresh_token = "class-refresh"
-        NationBuilderOAuth.nb_token_created_at = 100.0
-        NationBuilderOAuth.nb_token_expires_in = 200
-        try:
-            oauth_client.token_state.set_tokens(
-                TokenSet(
-                    access_token="instance-token",
-                    refresh_token="instance-refresh",
-                    created_at=123.0,
-                    expires_in=3600,
-                )
+    def test_sync_legacy_attrs_from_token_state_updates_instance_attrs(self, oauth_client):
+        """Test token-state sync updates the instance legacy attrs."""
+        oauth_client.token_state.set_tokens(
+            TokenSet(
+                access_token="instance-token",
+                refresh_token="instance-refresh",
+                created_at=123.0,
+                expires_in=3600,
             )
+        )
 
-            oauth_client._sync_legacy_attrs_from_token_state()
+        oauth_client._sync_legacy_attrs_from_token_state()
 
-            assert oauth_client.nb_jwt_token == "instance-token"
-            assert oauth_client.nb_refresh_token == "instance-refresh"
-            assert oauth_client.nb_token_created_at == 123.0
-            assert oauth_client.nb_token_expires_in == 3600
-            assert NationBuilderOAuth.nb_jwt_token == "class-token"
-            assert NationBuilderOAuth.nb_refresh_token == "class-refresh"
-            assert NationBuilderOAuth.nb_token_created_at == 100.0
-            assert NationBuilderOAuth.nb_token_expires_in == 200
-        finally:
-            NationBuilderOAuth.nb_jwt_token = original_class_token
-            NationBuilderOAuth.nb_refresh_token = original_refresh
-            NationBuilderOAuth.nb_token_created_at = original_created
-            NationBuilderOAuth.nb_token_expires_in = original_expires
+        assert oauth_client.nb_jwt_token == "instance-token"
+        assert oauth_client.nb_refresh_token == "instance-refresh"
+        assert oauth_client.nb_token_created_at == 123.0
+        assert oauth_client.nb_token_expires_in == 3600
 
 
 if __name__ == "__main__":
