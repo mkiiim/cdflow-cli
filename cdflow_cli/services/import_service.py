@@ -174,7 +174,6 @@ class DonationImportService:
                 logger.error("Failed to initialize OAuth token")
                 return False
 
-            self.oauth = auth_service.get_oauth_instance()
             self._initialize_clients_from_token_provider(
                 auth_service.get_token_provider(),
                 auth_service.get_nation_slug(),

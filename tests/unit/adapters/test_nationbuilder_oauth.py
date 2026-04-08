@@ -10,6 +10,7 @@ import time
 import secrets
 from http.server import HTTPServer
 from cdflow_cli.adapters.nationbuilder.oauth import NationBuilderOAuth, CallbackHandler, get_logo_base64
+from cdflow_cli.nationbuilder_auth_core.models import TokenSet
 
 
 class TestGetLogoBase64:
@@ -321,8 +322,8 @@ class TestNationBuilderOAuth:
             assert oauth_client.nb_token_expires_in == 3600
             assert oauth_client.nb_token_created_at == 1234567890
             
-            # Check class variables are also updated
-            assert NationBuilderOAuth.nb_jwt_token == "jwt_token_123"
+            # Class-global fields are no longer the operational sync target
+            assert NationBuilderOAuth.nb_jwt_token != "jwt_token_123"
     
     def test_get_access_token_no_auth_code(self, oauth_client):
         """Test access token retrieval when auth code fails."""
@@ -536,6 +537,43 @@ class TestNationBuilderOAuth:
             
             assert result == "success"
             mock_logger.info.assert_called()
+
+    def test_sync_legacy_attrs_from_token_state_does_not_update_class_globals(self, oauth_client):
+        """Test token-state sync updates only instance legacy attrs, not class-global attrs."""
+        original_class_token = NationBuilderOAuth.nb_jwt_token
+        original_refresh = NationBuilderOAuth.nb_refresh_token
+        original_created = NationBuilderOAuth.nb_token_created_at
+        original_expires = NationBuilderOAuth.nb_token_expires_in
+
+        NationBuilderOAuth.nb_jwt_token = "class-token"
+        NationBuilderOAuth.nb_refresh_token = "class-refresh"
+        NationBuilderOAuth.nb_token_created_at = 100.0
+        NationBuilderOAuth.nb_token_expires_in = 200
+        try:
+            oauth_client.token_state.set_tokens(
+                TokenSet(
+                    access_token="instance-token",
+                    refresh_token="instance-refresh",
+                    created_at=123.0,
+                    expires_in=3600,
+                )
+            )
+
+            oauth_client._sync_legacy_attrs_from_token_state()
+
+            assert oauth_client.nb_jwt_token == "instance-token"
+            assert oauth_client.nb_refresh_token == "instance-refresh"
+            assert oauth_client.nb_token_created_at == 123.0
+            assert oauth_client.nb_token_expires_in == 3600
+            assert NationBuilderOAuth.nb_jwt_token == "class-token"
+            assert NationBuilderOAuth.nb_refresh_token == "class-refresh"
+            assert NationBuilderOAuth.nb_token_created_at == 100.0
+            assert NationBuilderOAuth.nb_token_expires_in == 200
+        finally:
+            NationBuilderOAuth.nb_jwt_token = original_class_token
+            NationBuilderOAuth.nb_refresh_token = original_refresh
+            NationBuilderOAuth.nb_token_created_at = original_created
+            NationBuilderOAuth.nb_token_expires_in = original_expires
 
 
 if __name__ == "__main__":

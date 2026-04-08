@@ -232,12 +232,6 @@ class UnifiedAuthService:
         self.oauth.nb_token_created_at = None
         self.oauth.nb_token_expires_in = None
 
-        # Clear class variables for backward compatibility
-        NationBuilderOAuth.nb_jwt_token = None
-        NationBuilderOAuth.nb_refresh_token = None
-        NationBuilderOAuth.nb_token_created_at = None
-        NationBuilderOAuth.nb_token_expires_in = None
-
         # Reset auth state
         self._auth_state = AuthState()
 

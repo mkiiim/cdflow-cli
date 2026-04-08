@@ -425,6 +425,8 @@ class NationBuilderOAuth:
         Returns:
             callable: Decorated function
         """
+        # Compatibility-only: no remaining runtime code path uses this decorator directly.
+        # Keep it in place until external or test consumers are explicitly removed.
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -488,7 +490,7 @@ class NationBuilderOAuth:
             self.token_state.set_tokens(token_set)
 
     def _sync_legacy_attrs_from_token_state(self) -> None:
-        """Keep legacy instance and class attributes aligned with token state."""
+        """Keep legacy instance attributes aligned with token state."""
         token_set = self.token_state.token_set
         if token_set is None:
             self.nb_jwt_token = None
@@ -500,11 +502,6 @@ class NationBuilderOAuth:
             self.nb_refresh_token = token_set.refresh_token
             self.nb_token_expires_in = token_set.expires_in
             self.nb_token_created_at = token_set.created_at
-
-        NationBuilderOAuth.nb_jwt_token = self.nb_jwt_token
-        NationBuilderOAuth.nb_refresh_token = self.nb_refresh_token
-        NationBuilderOAuth.nb_token_expires_in = self.nb_token_expires_in
-        NationBuilderOAuth.nb_token_created_at = self.nb_token_created_at
 
     def _set_token_set(self, token_set: TokenSet) -> None:
         """Replace current token state and synchronize legacy compatibility fields."""
