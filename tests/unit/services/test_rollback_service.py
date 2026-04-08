@@ -68,11 +68,11 @@ class TestDonationRollbackService:
         service = DonationRollbackService(mock_config_provider, mock_logging_provider)
         
         # Mock the auth flow
-        mock_oauth = Mock()
-        mock_oauth.slug = 'test-nation'
         mock_auth_service = Mock()
         mock_auth_service.authenticate.return_value = True
-        mock_auth_service.get_oauth_instance.return_value = mock_oauth
+        mock_token_provider = Mock()
+        mock_auth_service.get_token_provider.return_value = mock_token_provider
+        mock_auth_service.get_nation_slug.return_value = 'test-nation'
         mock_create_auth_service.return_value = mock_auth_service
         
         # Test the current method name
@@ -81,8 +81,8 @@ class TestDonationRollbackService:
         assert result is True
         mock_create_auth_service.assert_called_once()
         mock_auth_service.authenticate.assert_called_once()
-        mock_people.assert_called_once_with(oauth=mock_oauth)
-        mock_donation.assert_called_once_with(oauth=mock_oauth)
+        mock_people.assert_called_once_with(token_provider=mock_token_provider)
+        mock_donation.assert_called_once_with(token_provider=mock_token_provider)
     
     def test_validate_config_success(self, mock_config_provider, mock_logging_provider):
         """Test successful configuration validation."""

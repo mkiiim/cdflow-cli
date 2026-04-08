@@ -85,14 +85,14 @@ class DonationRollbackService:
                 self.logger.error("Failed to initialize OAuth token")
                 return False
 
-            oauth_instance = self.nboauth.get_oauth_instance()
+            token_provider = self.nboauth.get_token_provider()
 
             # Create API client instances
-            self.people = NBPeople(oauth=oauth_instance)
-            self.donation = NBDonation(oauth=oauth_instance)
+            self.people = NBPeople(token_provider=token_provider)
+            self.donation = NBDonation(token_provider=token_provider)
 
             # Store nation slug for display
-            self.nation_slug = oauth_instance.slug
+            self.nation_slug = self.nboauth.get_nation_slug()
             self.logger.debug(f"API clients initialized successfully. Nation: {self.nation_slug}")
 
             return True

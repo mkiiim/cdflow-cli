@@ -57,3 +57,26 @@ class TestUnifiedAuthServiceSimple:
         assert service.context == AuthContext.CLI
         # Verify that service was created successfully and OAuth was initialized
         mock_oauth_class.assert_called_once()
+
+    @patch('cdflow_cli.services.auth_service.NationBuilderOAuth')
+    def test_service_exposes_token_provider_and_nation_slug(
+        self, mock_oauth_class, mock_config_provider
+    ):
+        """Test shared-core accessors expose token provider and nation slug."""
+        mock_config_provider.get_oauth_config.return_value = {
+            'slug': 'test-nation',
+            'client_id': 'test-id',
+            'client_secret': 'test-secret',
+            'redirect_uri': 'http://localhost:8000/callback',
+        }
+
+        mock_oauth_instance = Mock()
+        mock_oauth_instance.slug = 'test-nation'
+        mock_oauth_instance.token_provider = Mock()
+        mock_oauth_class.return_value = mock_oauth_instance
+
+        service = UnifiedAuthService(config=mock_config_provider, context=AuthContext.CLI)
+
+        assert service.get_token_provider() is mock_oauth_instance.token_provider
+        assert service.get_nation_slug() == 'test-nation'
+        mock_oauth_instance._sync_token_state_from_legacy_attrs.assert_called_once()

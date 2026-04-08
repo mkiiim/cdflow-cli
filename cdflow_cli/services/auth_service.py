@@ -15,6 +15,7 @@ from enum import Enum
 from dataclasses import dataclass
 
 from ..adapters.nationbuilder.oauth import NationBuilderOAuth
+from ..nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
 from ..utils.config import ConfigProvider
 
 logger = logging.getLogger(__name__)
@@ -253,6 +254,25 @@ class UnifiedAuthService:
             NationBuilderOAuth: The OAuth instance
         """
         return self.oauth
+
+    def get_token_provider(self) -> NationBuilderTokenProvider:
+        """
+        Get the shared-core token provider owned by the auth service.
+
+        Returns:
+            NationBuilderTokenProvider: The shared-core token provider
+        """
+        self.oauth._sync_token_state_from_legacy_attrs()
+        return self.oauth.token_provider
+
+    def get_nation_slug(self) -> str:
+        """
+        Get the configured NationBuilder slug for the active auth context.
+
+        Returns:
+            str: NationBuilder nation slug
+        """
+        return self.oauth.slug
 
     def ensure_valid_token(self) -> bool:
         """

@@ -14,7 +14,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, List, Tuple, Callable
 from io import StringIO
 
-from ..adapters.nationbuilder import NBPeople, NBDonation, NationBuilderOAuth
+from ..adapters.nationbuilder import NBPeople, NBDonation
+from ..nationbuilder_auth_core.models import OAuthConfig, TokenSet
+from ..nationbuilder_auth_core.token_client import NationBuilderTokenClient
+from ..nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
+from ..nationbuilder_auth_core.token_state import InMemoryTokenState
+from ..services.auth_service import create_cli_auth_service
 from ..utils.config import ConfigProvider
 from ..utils.logging import LoggingProvider, get_logging_provider
 from ..utils.paths import get_paths
@@ -49,6 +54,7 @@ class DonationImportService:
         # Initialize API client attributes
         self.nation_slug = None
         self.oauth = None
+        self.token_provider = None
         self.oauth_initialized = False
         self.people = None
         self.donation = None
@@ -107,6 +113,35 @@ class DonationImportService:
             logger.warning(f"Invalid log level: {log_level}, using DEBUG")
             logging.getLogger().setLevel(logging.DEBUG)
 
+    def _build_token_provider_from_payload(
+        self, oauth_config: Dict[str, Any], oauth_tokens: Dict[str, Any]
+    ) -> NationBuilderTokenProvider:
+        """Build a shared-core token provider from config plus a token payload."""
+        oauth_core_config = OAuthConfig(
+            slug=oauth_config["slug"],
+            client_id=oauth_config["client_id"],
+            client_secret=oauth_config["client_secret"],
+            redirect_uri=oauth_config["redirect_uri"],
+        )
+        token_client = NationBuilderTokenClient(oauth_core_config)
+        token_state = InMemoryTokenState()
+        token_state.set_tokens(
+            TokenSet(
+                access_token=oauth_tokens.get("access_token"),
+                refresh_token=oauth_tokens.get("refresh_token"),
+                expires_in=oauth_tokens.get("expires_in"),
+                created_at=oauth_tokens.get("created_at"),
+            )
+        )
+        return NationBuilderTokenProvider(token_state, token_client)
+
+    def _initialize_clients_from_token_provider(self, token_provider, nation_slug: str) -> None:
+        """Bind NationBuilder API clients to the shared-core token provider."""
+        self.token_provider = token_provider
+        self.nation_slug = nation_slug
+        self.people = NBPeople(token_provider=token_provider)
+        self.donation = NBDonation(token_provider=token_provider)
+
     def initialize_api_clients(self) -> bool:
         """
         Initialize NationBuilder API clients.
@@ -130,28 +165,23 @@ class DonationImportService:
             redacted_config = {
                 k: ("*****" if k in ["client_secret"] else v) for k, v in oauth_config.items()
             }
-            logger.debug(f"Initializing OAuth with config: {redacted_config}")
+            logger.debug(f"Initializing auth service with config: {redacted_config}")
 
-            # Create NationBuilderOAuth instance
-            self.oauth = NationBuilderOAuth(oauth_config, auto_initialize=False)
+            auth_service = create_cli_auth_service(oauth_config)
 
-            # Store the nation slug from the OAuth instance
-            self.nation_slug = self.oauth.slug
-            logger.debug(f"Using nation slug: {self.nation_slug}")
-
-            # Create API client instances with the OAuth instance
-            # This ensures each client has access to the same OAuth instance
-            self.people = NBPeople(self.oauth)
-            self.donation = NBDonation(self.oauth)
-
-            # Now explicitly initialize the OAuth token - this is where API calls happen
-            logger.debug("Explicitly initializing OAuth token")
-            if not self.oauth.initialize():
+            logger.debug("Explicitly initializing auth service token")
+            if not auth_service.authenticate():
                 logger.error("Failed to initialize OAuth token")
                 return False
 
+            self.oauth = auth_service.get_oauth_instance()
+            self._initialize_clients_from_token_provider(
+                auth_service.get_token_provider(),
+                auth_service.get_nation_slug(),
+            )
+
             logger.debug(
-                f"Successfully obtained access token ending in ...{self.oauth.nb_jwt_token[-5:] if self.oauth.nb_jwt_token else 'None'}"
+                "Successfully obtained access token from auth service for import initialization"
             )
 
             # Detect if custom donation tracking fields exist in this nation
@@ -199,28 +229,12 @@ class DonationImportService:
                 k: ("*****" if k in ["client_secret"] else v) for k, v in oauth_config.items()
             }
             logger.debug(
-                f"Initializing OAuth with config and pre-existing tokens: {redacted_config}"
+                f"Initializing NationBuilder clients with config and pre-existing tokens: {redacted_config}"
             )
 
-            # Create NationBuilderOAuth instance without auto-initialization
-            self.oauth = NationBuilderOAuth(oauth_config, auto_initialize=False)
-
-            # Set the pre-existing tokens directly
-            self.oauth.nb_jwt_token = oauth_tokens.get("access_token")
-            self.oauth.nb_refresh_token = oauth_tokens.get("refresh_token")
-            self.oauth.nb_token_expires_in = oauth_tokens.get("expires_in")
-            
-            # Only update created_at if it exists in oauth_tokens, to prevent overwriting valid metadata with None
-            if "created_at" in oauth_tokens and oauth_tokens["created_at"] is not None:
-                self.oauth.nb_token_created_at = oauth_tokens.get("created_at")
-
-            # Store the nation slug from the OAuth instance
-            self.nation_slug = self.oauth.slug
+            token_provider = self._build_token_provider_from_payload(oauth_config, oauth_tokens)
+            self._initialize_clients_from_token_provider(token_provider, oauth_config["slug"])
             logger.debug(f"Using nation slug: {self.nation_slug}")
-
-            # Create API client instances with the OAuth instance
-            self.people = NBPeople(self.oauth)
-            self.donation = NBDonation(self.oauth)
 
             # Verify the token is valid by making a simple API call
             logger.debug("Verifying OAuth token with test API call")
@@ -247,7 +261,7 @@ class DonationImportService:
                 self.custom_fields_available = {"import_job_id": False, "import_job_source": False}
 
             logger.debug(
-                f"Successfully initialized with access token ending in ...{self.oauth.nb_jwt_token[-5:] if self.oauth.nb_jwt_token else 'None'}"
+                "Successfully initialized NationBuilder clients with pre-existing user tokens"
             )
 
             self.oauth_initialized = True

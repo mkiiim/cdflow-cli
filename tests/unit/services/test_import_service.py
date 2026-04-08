@@ -405,3 +405,96 @@ class TestDonationImportServiceSimple:
 
                 assert (row_succeeded, should_continue) == (False, True)
                 mock_record_failed.assert_called_once()
+
+    @patch('cdflow_cli.services.import_service.NBDonation')
+    @patch('cdflow_cli.services.import_service.NBPeople')
+    def test_initialize_api_clients_uses_auth_service_token_provider(
+        self, mock_people_class, mock_donation_class, mock_config_provider
+    ):
+        """Test interactive initialization consumes the auth-service token provider seam."""
+        mock_config_provider.get_oauth_config.return_value = {
+            'slug': 'test-nation',
+            'client_id': 'test-id',
+            'client_secret': 'test-secret',
+            'redirect_uri': 'http://localhost:8000/callback',
+        }
+
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                with patch('cdflow_cli.services.import_service.create_cli_auth_service') as mock_create_auth_service:
+                    mock_paths = Mock()
+                    mock_get_paths.return_value = mock_paths
+
+                    mock_token_provider = Mock()
+                    mock_auth_service = Mock()
+                    mock_auth_service.authenticate.return_value = True
+                    mock_auth_service.get_token_provider.return_value = mock_token_provider
+                    mock_auth_service.get_nation_slug.return_value = 'test-nation'
+                    mock_auth_service.get_oauth_instance.return_value = Mock()
+                    mock_create_auth_service.return_value = mock_auth_service
+
+                    mock_donation = Mock()
+                    mock_donation.detect_custom_donation_fields.return_value = {
+                        'import_job_id': True,
+                        'import_job_source': True,
+                    }
+                    mock_donation_class.return_value = mock_donation
+
+                    service = DonationImportService(config_provider=mock_config_provider)
+
+                    result = service.initialize_api_clients()
+
+                assert result is True
+                mock_create_auth_service.assert_called_once()
+                mock_auth_service.authenticate.assert_called_once()
+                mock_people_class.assert_called_once_with(token_provider=mock_token_provider)
+                mock_donation_class.assert_called_once_with(token_provider=mock_token_provider)
+                assert service.token_provider is mock_token_provider
+                assert service.nation_slug == 'test-nation'
+
+    @patch('cdflow_cli.services.import_service.NBDonation')
+    @patch('cdflow_cli.services.import_service.NBPeople')
+    def test_initialize_api_clients_with_tokens_uses_token_provider(
+        self, mock_people_class, mock_donation_class, mock_config_provider
+    ):
+        """Test token-seeded initialization builds API clients from a shared-core token provider."""
+        mock_config_provider.get_oauth_config.return_value = {
+            'slug': 'test-nation',
+            'client_id': 'test-id',
+            'client_secret': 'test-secret',
+            'redirect_uri': 'http://localhost:8000/callback',
+        }
+
+        with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
+            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+                mock_paths = Mock()
+                mock_get_paths.return_value = mock_paths
+
+                mock_people = Mock()
+                mock_people.get_person_by_id.side_effect = Exception('404 Not Found')
+                mock_people_class.return_value = mock_people
+
+                mock_donation = Mock()
+                mock_donation.detect_custom_donation_fields.return_value = {
+                    'import_job_id': False,
+                    'import_job_source': False,
+                }
+                mock_donation_class.return_value = mock_donation
+
+                service = DonationImportService(config_provider=mock_config_provider)
+                oauth_tokens = {
+                    'access_token': 'test-token',
+                    'refresh_token': 'refresh-token',
+                    'expires_in': 3600,
+                    'created_at': 1234567890.0,
+                }
+
+                result = service.initialize_api_clients_with_tokens(oauth_tokens)
+
+                assert result is True
+                assert service.token_provider is not None
+                assert service.nation_slug == 'test-nation'
+                mock_people_class.assert_called_once()
+                mock_donation_class.assert_called_once()
+                assert mock_people_class.call_args.kwargs['token_provider'] is service.token_provider
+                assert mock_donation_class.call_args.kwargs['token_provider'] is service.token_provider
