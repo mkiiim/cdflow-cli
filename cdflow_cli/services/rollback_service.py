@@ -58,25 +58,6 @@ class DonationRollbackService:
                 self.logger.error("OAuth configuration not found in environment variables")
                 return False
 
-            # Ensure redirect_uri and callback_port are present for CLI context
-            deployment_hostname = self.config_provider.get_app_setting(
-                ["deployment", "hostname"], "localhost"
-            )
-            deployment_api_port = self.config_provider.get_app_setting(
-                ["deployment", "api_port"], 8000
-            )
-
-            cli_redirect_uri = f"http://{deployment_hostname}:{deployment_api_port}/callback"
-
-            if "redirect_uri" not in oauth_config:
-                oauth_config["redirect_uri"] = cli_redirect_uri
-                self.logger.debug(f"Added default redirect_uri for CLI context: {cli_redirect_uri}")
-            if "callback_port" not in oauth_config:
-                oauth_config["callback_port"] = deployment_api_port
-                self.logger.debug(
-                    f"Added default callback_port for CLI context: {deployment_api_port}"
-                )
-
             self.nboauth = create_cli_auth_service(oauth_config)
 
             # Initialize OAuth to get tokens
