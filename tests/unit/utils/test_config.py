@@ -257,7 +257,6 @@ class TestConfigProvider:
             'NB_CLIENT_ID': 'env-client-id',
             'NB_CLIENT_SECRET': 'env-client-secret',
             'NB_SLUG': 'env-slug',
-            'NB_REDIRECT_URI': 'http://env-redirect.com/callback'
         }):
             provider = ConfigProvider()
             provider.load_from_env()
@@ -266,11 +265,6 @@ class TestConfigProvider:
             assert nb_config['client_id'] == 'env-client-id'
             assert nb_config['client_secret'] == 'env-client-secret'
             assert nb_config['slug'] == 'env-slug'
-            # redirect_uri may be stored in oauth subkey
-            if 'redirect_uri' in nb_config:
-                assert nb_config['redirect_uri'] == 'http://env-redirect.com/callback'
-            elif 'oauth' in nb_config and 'redirect_uri' in nb_config['oauth']:
-                assert nb_config['oauth']['redirect_uri'] == 'http://env-redirect.com/callback'
     
     def test_load_from_env_missing_credentials(self):
         """Test env loading when OAuth credentials are missing."""
@@ -348,6 +342,10 @@ class TestConfigProvider:
                     'client_secret': 'test-secret'
                 },
                 'deployment': {
+                    'pattern': 'local',
+                    'hostname': 'localhost',
+                    'api_port': 8000,
+                    'frontend_port': 3000,
                     'local': {'oauth': {'redirect_uri': 'http://localhost:8000/callback'}},
                     'production': {'oauth': {'redirect_uri': 'https://prod.com/callback'}}
                 }

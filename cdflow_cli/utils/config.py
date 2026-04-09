@@ -208,8 +208,6 @@ class ConfigProvider:
                 "NB_SLUG",
                 "NB_CLIENT_ID",
                 "NB_CLIENT_SECRET",
-                "NB_REDIRECT_URI",
-                "NB_CALLBACK_PORT",
             ]
         )
 

@@ -91,7 +91,6 @@ class TestSecureConfigValidator:
             'NB_CLIENT_ID': 'test_client_id_12345',
             'NB_CLIENT_SECRET': 'test_client_secret_with_sufficient_length',
             'NB_CONFIG_NAME': 'development',
-            'NB_REDIRECT_URI': 'http://localhost:8000/callback'
         }, clear=True):
             config = SecureConfigValidator.get_oauth_config()
             
@@ -99,7 +98,6 @@ class TestSecureConfigValidator:
             assert config['client_id'] == 'test_client_id_12345'
             assert config['client_secret'] == 'test_client_secret_with_sufficient_length'
             assert config['config_name'] == 'development'
-            assert config['redirect_uri'] == 'http://localhost:8000/callback'
     
     def test_get_oauth_config_default_config_name(self):
         """Test OAuth config with default config name."""
@@ -302,7 +300,6 @@ class TestSecureConfigIntegration:
             'NB_CLIENT_ID': 'integration_client_id_12345',
             'NB_CLIENT_SECRET': 'integration_client_secret_sufficient_length',
             'NB_CONFIG_NAME': 'integration',
-            'NB_REDIRECT_URI': 'http://localhost:9000/callback'
         }, clear=True):
             # Test validation
             assert SecureConfigValidator.validate_environment() is True
@@ -311,7 +308,6 @@ class TestSecureConfigIntegration:
             config = SecureConfigValidator.get_oauth_config()
             assert config['slug'] == 'integration-test-nation'
             assert config['config_name'] == 'integration'
-            assert config['redirect_uri'] == 'http://localhost:9000/callback'
             
             # Test SecretManager
             manager = SecretManager()
@@ -394,7 +390,6 @@ class TestSecureConfigMainBlock:
             'NB_SLUG': 'test-main-nation',
             'NB_CLIENT_ID': 'test_main_client_id_12345',
             'NB_CLIENT_SECRET': 'test_main_client_secret_sufficient_length',
-            'NB_REDIRECT_URI': 'http://localhost:8000/callback'
         }
         
         result = subprocess.run([

@@ -69,13 +69,7 @@ class SecureConfigValidator:
             "client_secret": os.getenv("NB_CLIENT_SECRET"),
             "config_name": os.getenv("NB_CONFIG_NAME", "not_configured"),
         }
-        
-        # Only add redirect_uri if explicitly set via environment variable
-        # Let CLI use its own redirect URI construction logic
-        redirect_uri = os.getenv("NB_REDIRECT_URI")
-        if redirect_uri:
-            config["redirect_uri"] = redirect_uri
-            
+
         return config
 
 
@@ -130,7 +124,6 @@ if __name__ == "__main__":
         print("✅ OAuth configuration valid")
         print(f"Nation: {config['slug']}")
         print(f"Client ID: {config['client_id'][:8]}...")
-        print(f"Redirect URI: {config['redirect_uri']}")
     except Exception as e:
         print(f"❌ OAuth configuration error: {e}")
         sys.exit(1)
