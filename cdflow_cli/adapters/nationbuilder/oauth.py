@@ -70,8 +70,8 @@ class CallbackHandler(BaseHTTPRequestHandler):
         self.config_provider = config_provider
         super().__init__(*args, **kwargs)
 
-    def get_success_html(self):
-        """Generate success HTML with dynamic logo loading."""
+    def get_processing_html(self):
+        """Generate neutral processing HTML for the OAuth callback window."""
         logo_base64 = get_logo_base64(self.config_provider)
         return f"""
          <html>
@@ -105,8 +105,8 @@ class CallbackHandler(BaseHTTPRequestHandler):
              <body>
                  <div class="message-box">
                      <img src="{logo_base64}" alt="Platform Logo" style="height: 80px; width: auto; margin-bottom: 20px;">
-                     <h2>Authentication Complete</h2>
-                     <p>This window should close automatically. It is safe to close manually.</p>
+                     <h2>Processing Authentication</h2>
+                     <p>Please wait while the CLI validates the callback. This window should close automatically.</p>
                  </div>
              </body>
          </html>
@@ -118,8 +118,8 @@ class CallbackHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        success_html = self.get_success_html()
-        self.wfile.write(success_html.encode("utf-8"))
+        processing_html = self.get_processing_html()
+        self.wfile.write(processing_html.encode("utf-8"))
 
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -397,9 +397,9 @@ class NationBuilderOAuth:
                     return True
             else:
                 logger.warning(
-                    "DEBUG - Token validation: No expiration data available, assuming valid (risky)"
+                    "DEBUG - Token validation: No expiration data available, treating token as invalid"
                 )
-                return True
+                return False
 
         except Exception as e:
             logger.debug(f"DEBUG - Token validation: Token invalid - {str(e)}")

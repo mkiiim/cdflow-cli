@@ -37,15 +37,15 @@ class TestCallbackHandler:
             assert handler.config_provider == mock_config
     
     @patch('cdflow_cli.adapters.nationbuilder.oauth.get_logo_base64')
-    def test_get_success_html(self, mock_get_logo):
+    def test_get_processing_html(self, mock_get_logo):
         """Test success HTML generation."""
         mock_get_logo.return_value = "data:image/png;base64,test123"
         
         with patch('cdflow_cli.adapters.nationbuilder.oauth.BaseHTTPRequestHandler.__init__'):
             handler = CallbackHandler()
-            html = handler.get_success_html()
+            html = handler.get_processing_html()
             
-            assert "Authentication Complete" in html
+            assert "Processing Authentication" in html
             assert "data:image/png;base64,test123" in html
             assert "window.close()" in html
     
@@ -62,12 +62,12 @@ class TestCallbackHandler:
             handler.end_headers = Mock()
             handler.wfile = Mock()
             
-            with patch.object(handler, 'get_success_html', return_value="<html>Success</html>"):
+            with patch.object(handler, 'get_processing_html', return_value="<html>Processing</html>"):
                 handler.do_GET()
                 
                 assert handler.server.callback_code == "test123"
                 assert handler.server.callback_state == "abc456"
-                handler.wfile.write.assert_called_with(b"<html>Success</html>")
+                handler.wfile.write.assert_called_with(b"<html>Processing</html>")
     
     def test_do_get_with_code_only(self):
         """Test GET request processing with code but no state."""
@@ -82,7 +82,7 @@ class TestCallbackHandler:
             handler.end_headers = Mock()
             handler.wfile = Mock()
             
-            with patch.object(handler, 'get_success_html', return_value="<html>Success</html>"):
+            with patch.object(handler, 'get_processing_html', return_value="<html>Processing</html>"):
                 handler.do_GET()
                 
                 assert handler.server.callback_code == "test123"
@@ -101,7 +101,7 @@ class TestCallbackHandler:
             handler.end_headers = Mock()
             handler.wfile = Mock()
             
-            with patch.object(handler, 'get_success_html', return_value="<html>Success</html>"):
+            with patch.object(handler, 'get_processing_html', return_value="<html>Processing</html>"):
                 handler.do_GET()
                 
                 assert handler.server.callback_code is None
@@ -429,12 +429,11 @@ class TestNationBuilderOAuth:
         oauth_client.nb_token_created_at = None
         oauth_client.nb_token_expires_in = None
         
-        # Since jose library isn't available, we'll test the exception path indirectly
-        # by testing when no metadata is available, it falls back and returns False for invalid tokens
+        # When no expiration metadata exists and JWT decoding cannot establish validity,
+        # token validation must fail closed rather than assume success.
         with patch('cdflow_cli.adapters.nationbuilder.oauth.logger') as mock_logger:
             result = oauth_client.token_is_valid()
             
-            # Should return False when JWT can't be decoded (jose not available)
             assert result is False
             mock_logger.debug.assert_called()
     
