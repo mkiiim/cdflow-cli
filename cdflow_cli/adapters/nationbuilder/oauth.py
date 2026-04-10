@@ -154,6 +154,7 @@ class NationBuilderOAuth:
         self.client_id = self.config["client_id"]
         self.client_secret = self.config["client_secret"]
         self.redirect_uri = self.config["redirect_uri"]
+        self.callback_bind_host = self.config["callback_bind_host"]
         self.callback_port = self.config["callback_port"]
 
         # Initialize instance variables for token storage
@@ -225,7 +226,7 @@ class NationBuilderOAuth:
             str or None: Authorization code if successful, None otherwise
         """
         try:
-            server = HTTPServer(("0.0.0.0", self.callback_port), CallbackHandler)
+            server = HTTPServer((self.callback_bind_host, self.callback_port), CallbackHandler)
             server.callback_code = None
             server.callback_state = None
         except Exception as e:
