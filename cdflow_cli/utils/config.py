@@ -710,18 +710,43 @@ class ConfigProvider:
         # Use environment variables for OAuth configuration
         try:
             oauth_config = SecureConfigValidator.get_oauth_config()
-            
-            # Auto-generate redirect_uri if not provided
-            if "redirect_uri" not in oauth_config or not oauth_config["redirect_uri"]:
-                deployment_config = self.yaml_config.get("deployment", {})
-                user_hostname = deployment_config.get("hostname", "localhost")
-                user_api_port = deployment_config.get("api_port", 8000)
 
-                callback_url = f"http://{user_hostname}:{user_api_port}/callback"
-                oauth_config["redirect_uri"] = callback_url
-                oauth_config["callback_port"] = user_api_port
+            nboauth_config = self.get_app_setting(["nboauth"], {})
+            if not isinstance(nboauth_config, dict):
+                raise ValueError("OAuth configuration required: nboauth must be a mapping")
 
-                logger.debug(f"Auto-generated OAuth redirect_uri: {callback_url}")
+            callback_config = nboauth_config.get("callback", {})
+            if not isinstance(callback_config, dict):
+                raise ValueError("OAuth configuration required: nboauth.callback must be a mapping")
+
+            redirect_uri = nboauth_config.get("redirect_uri")
+            callback_bind_host = callback_config.get("bind_host")
+            callback_bind_port = callback_config.get("bind_port")
+
+            missing_fields = []
+            if not redirect_uri:
+                missing_fields.append("nboauth.redirect_uri")
+            if not callback_bind_host:
+                missing_fields.append("nboauth.callback.bind_host")
+            if callback_bind_port in [None, ""]:
+                missing_fields.append("nboauth.callback.bind_port")
+
+            if missing_fields:
+                raise ValueError(
+                    "OAuth configuration required: missing explicit callback settings in YAML: "
+                    + ", ".join(missing_fields)
+                )
+
+            try:
+                callback_port = int(callback_bind_port)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "OAuth configuration required: nboauth.callback.bind_port must be an integer"
+                ) from exc
+
+            oauth_config["redirect_uri"] = redirect_uri
+            oauth_config["callback_bind_host"] = callback_bind_host
+            oauth_config["callback_port"] = callback_port
             
             return oauth_config
             
@@ -750,14 +775,13 @@ class ConfigProvider:
 
         # If a request_host is provided, use it to construct the base URL
         if request_host:
-            # Check if the request_host includes a port
+            # If the request host includes a port, trust it as the public-facing port
             if ":" in request_host:
-                public_hostname, _ = request_host.split(":", 1)
+                public_hostname, public_port = request_host.split(":", 1)
+                return f"http://{public_hostname}:{public_port}"
             else:
                 public_hostname = request_host
-
-            # Return full URL with hostname and port
-            return f"http://{public_hostname}:{port}"
+                return f"http://{public_hostname}:{port}"
 
         # The public hostname must come from the deployment section.
         deployment_config = self.yaml_config.get("deployment", {})

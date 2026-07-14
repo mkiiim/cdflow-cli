@@ -15,6 +15,21 @@ deployment:
   additional_origins:
     - "127.0.0.1"                           # localhost alias
     - "10.0.0.0/24"                         # CIDR notation for subnet access
+
+# ==================== OAUTH CONFIGURATION ====================
+# OAuth secrets are read from environment variables:
+# - NB_SLUG
+# - NB_CLIENT_ID
+# - NB_CLIENT_SECRET
+# - NB_CONFIG_NAME (optional)
+nboauth:
+  # Exact OAuth callback URL registered in NationBuilder for this deployment mode
+  redirect_uri: "http://localhost:8000/callback"
+
+  # Temporary callback listener used by cdflow-cli during OAuth login
+  callback:
+    bind_host: "localhost"
+    bind_port: 8000
     
 # ==================== API CONFIGURATION ====================
 api:

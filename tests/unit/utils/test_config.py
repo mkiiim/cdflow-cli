@@ -23,6 +23,13 @@ class TestConfigProvider:
                     'timeout': 120
                 }
             },
+            'nboauth': {
+                'redirect_uri': 'http://localhost:8000/callback',
+                'callback': {
+                    'bind_host': 'localhost',
+                    'bind_port': 8000,
+                }
+            },
             'import': {
                 'source': {
                     'type': 'canadahelps',
@@ -346,8 +353,13 @@ class TestConfigProvider:
                     'hostname': 'localhost',
                     'api_port': 8000,
                     'frontend_port': 3000,
-                    'local': {'oauth': {'redirect_uri': 'http://localhost:8000/callback'}},
-                    'production': {'oauth': {'redirect_uri': 'https://prod.com/callback'}}
+                },
+                'nboauth': {
+                    'redirect_uri': 'http://localhost:8000/callback',
+                    'callback': {
+                        'bind_host': 'localhost',
+                        'bind_port': 8000,
+                    }
                 }
             }
             
@@ -357,7 +369,9 @@ class TestConfigProvider:
             try:
                 oauth_config = provider.get_oauth_config()
                 assert isinstance(oauth_config, dict)
-                assert len(oauth_config) >= 0  # Has some config
+                assert oauth_config['redirect_uri'] == 'http://localhost:8000/callback'
+                assert oauth_config['callback_bind_host'] == 'localhost'
+                assert oauth_config['callback_port'] == 8000
             except ValueError:
                 # OAuth validation failed - this is expected behavior for security
                 # The important thing is that the method exists and handles validation

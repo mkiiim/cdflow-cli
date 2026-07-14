@@ -128,6 +128,7 @@ class TestNationBuilderOAuth:
             "client_id": "test_client_id",
             "client_secret": "test_client_secret",
             "redirect_uri": "http://localhost:8080/callback",
+            "callback_bind_host": "localhost",
             "callback_port": 8080
         }
     
@@ -144,6 +145,7 @@ class TestNationBuilderOAuth:
         assert oauth.client_id == "test_client_id"
         assert oauth.client_secret == "test_client_secret"
         assert oauth.redirect_uri == "http://localhost:8080/callback"
+        assert oauth.callback_bind_host == "localhost"
         assert oauth.callback_port == 8080
         assert oauth.nb_jwt_token is None
         assert oauth.current_state is None

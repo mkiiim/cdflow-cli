@@ -206,24 +206,10 @@ def run_cli(config=None, logging_provider=None) -> int:
         # Initialize CLI auth orchestration and get tokens for the job system
         from ..services.auth_service import create_cli_auth_service
 
-        # Ensure redirect_uri and callback_port are present for CLI context
-        # These values are not functionally used by the CLI, but are required by NationBuilderOAuth constructor
-        deployment_hostname = config.get_app_setting(["deployment", "hostname"], "localhost")
-        deployment_api_port = config.get_app_setting(
-            ["deployment", "api_port"], 8000
-        )  # Use API port
-
-        cli_redirect_uri = f"http://{deployment_hostname}:{deployment_api_port}/callback"
-
         oauth_config_to_use = config.get_oauth_config()
         if not oauth_config_to_use:
             logger.error("OAuth configuration not found in environment variables")
             return 1
-
-        if "redirect_uri" not in oauth_config_to_use:
-            oauth_config_to_use["redirect_uri"] = cli_redirect_uri
-        if "callback_port" not in oauth_config_to_use:
-            oauth_config_to_use["callback_port"] = deployment_api_port
 
         # Ensure logos are deployed before OAuth (uses custom config if specified)
         try:
