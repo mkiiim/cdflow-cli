@@ -775,14 +775,13 @@ class ConfigProvider:
 
         # If a request_host is provided, use it to construct the base URL
         if request_host:
-            # Check if the request_host includes a port
+            # If the request host includes a port, trust it as the public-facing port
             if ":" in request_host:
-                public_hostname, _ = request_host.split(":", 1)
+                public_hostname, public_port = request_host.split(":", 1)
+                return f"http://{public_hostname}:{public_port}"
             else:
                 public_hostname = request_host
-
-            # Return full URL with hostname and port
-            return f"http://{public_hostname}:{port}"
+                return f"http://{public_hostname}:{port}"
 
         # The public hostname must come from the deployment section.
         deployment_config = self.yaml_config.get("deployment", {})
