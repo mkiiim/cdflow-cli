@@ -22,6 +22,83 @@ This creates:
 
 This is the main application configuration file. It contains settings for storage, logging, and the import process itself. Below is a breakdown of the sections relevant to the CLI tool.
 
+The config shape is shared with `ccflow-app`, so some sections remain present even when the current CLI flow does not actively use every field.
+
+### `deployment`
+
+This section remains part of the shared config shape even in CLI-oriented setups.
+
+```yaml
+deployment:
+  pattern: local
+  hostname: "localhost"
+  api_port: 8801
+  frontend_port: 8800
+```
+
+- `pattern`: deployment mode - `local`, `network`, or `container`
+- `hostname`: deployment hostname for the shared config instance
+- `api_port`: app/API port for that deployment
+- `frontend_port`: frontend port for that deployment
+
+For CLI-local usage, these fields can remain in the file even when the active CLI flow mainly cares about storage, import settings, and the callback contract.
+
+### `nboauth`
+
+This section carries the shared OAuth callback contract.
+
+```yaml
+nboauth:
+  redirect_uri: "http://localhost:8801/callback"
+  callback:
+    bind_host: "localhost"
+    bind_port: 8801
+```
+
+- `redirect_uri`: the exact callback URI registered in NationBuilder
+- `callback.bind_host`: callback receiver host in the shared config shape
+- `callback.bind_port`: callback receiver port in the shared config shape
+
+Recommended rule:
+
+1. set `redirect_uri` to the exact NationBuilder callback URL
+2. populate `callback.bind_host` and `callback.bind_port` from the host/port in `redirect_uri`
+
+For local CLI use, `cdflow-cli` actively uses the `callback.bind_*` values for its temporary OAuth listener. In app-focused flows, those fields may still exist for shared-schema consistency and be ignored by the active runtime path.
+
+### `api`
+
+This section remains part of the shared config shape used across `cdflow-cli` and `ccflow-app`.
+
+```yaml
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors:
+    origins: []
+```
+
+- `host`: API binding address for app-facing deployments
+- `port`: API port for app-facing deployments
+- `cors.origins`: browser-facing CORS origins for app-facing deployments
+
+For CLI-only workflows, these values can remain present without affecting the import flow.
+
+### `frontend`
+
+This section remains part of the shared config shape used across `cdflow-cli` and `ccflow-app`.
+
+```yaml
+frontend:
+  host: 0.0.0.0
+  port: 8000
+```
+
+- `host`: frontend binding address for app-facing deployments
+- `port`: frontend port for app-facing deployments
+
+For CLI-only workflows, these values can remain present without affecting the import flow.
+
 ### `storage`
 
 This section defines the paths for various files used by the application. You will need to customize these paths for your system.
@@ -52,6 +129,21 @@ cli_import:
 
 -   `type`: The source of the import. Use `canadahelps` or `paypal`.
 -   `file`: The path to the CSV file to be imported, relative to the `cli_source` directory.
+
+### `logos`
+
+This section remains part of the shared config shape used across `cdflow-cli` and `ccflow-app`.
+
+```yaml
+logos:
+  use_custom: true
+  custom_path: "assets/logos/custom"
+```
+
+- `use_custom`: enable custom organizational logos
+- `custom_path`: directory for custom logo files
+
+For CLI-only workflows, these values can remain present without affecting the import flow.
 
 ### Automatic Job Tracking Fields
 
@@ -86,10 +178,6 @@ plugins:
 - `dir`: Directory containing plugin files (supports `~` for home directory)
 
 Plugins allow you to customize data transformations, tracking code mapping, payment type normalization, and eligibility filtering without modifying core code. See the [Plugin Examples](plugins/overview.md) for more information.
-
-### Other Sections
-
-The `deployment`, `api`, `frontend`, and `logos` sections are used by a (future) browser-based version of this application and can be ignored for CLI usage.
 
 ## OAuth Configuration (Environment Variables)
 

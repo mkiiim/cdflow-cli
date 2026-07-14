@@ -1,15 +1,20 @@
 # Security / Privacy Workstream
 
+## Local Changelog
+- 2026-04-10 16:14:26 EDT — codex — amended the callback findings after the explicit callback-config workstream so the document no longer describes the listener bind host or redirect URI as hardcoded deployment-derived behavior, and instead distinguishes current config-driven behavior from remaining security concerns.
+
 ## Scope
 This document captures security and privacy hardening opportunities identified in the `cdflow-cli` codebase, with emphasis on OAuth flow design, token handling, callback listener exposure, logging, and network hygiene.
 
 ## Current Assessment
 The CLI OAuth implementation is workable for a trusted operator environment, but it carries several avoidable risks and some non-best-practice patterns. The most important issues are:
 
-1. the local OAuth callback listener binds to all interfaces instead of localhost
+~~1. the local OAuth callback listener binds to all interfaces instead of localhost~~
+1. the local OAuth callback listener bind policy is now config-driven, but non-loopback binds remain possible and should be treated deliberately
 2. tokens are stored in process-global class variables for backward compatibility
 3. access and refresh token suffixes are logged in several places
-4. redirect URI generation is topology-coupled and defaults to insecure HTTP callback URLs
+~~4. redirect URI generation is topology-coupled and defaults to insecure HTTP callback URLs~~
+4. explicit callback fields now exist in config, but the security guidance around safe CLI listener defaults still needs to be documented and enforced clearly
 5. some auth ownership still routes through the legacy `NationBuilderOAuth` wrapper
 
 ## Status Since The Auth-Core Refactor
@@ -32,16 +37,20 @@ I do not see a fundamentally broken OAuth state check. State generation and vali
 
 ## Findings
 
-### 1. High: OAuth callback listener binds to `0.0.0.0`
+### 1. High: callback listener exposure is now config-driven rather than hardcoded
 Relevant code:
-- `cdflow_cli/adapters/nationbuilder/oauth.py:229`
+~~- `cdflow_cli/adapters/nationbuilder/oauth.py:229`~~
+- `cdflow_cli/adapters/nationbuilder/oauth.py`
+- `cdflow_cli/utils/config.py`
 
 Current behavior:
-- `HTTPServer(("0.0.0.0", self.callback_port), CallbackHandler)` listens on all network interfaces.
+~~- `HTTPServer(("0.0.0.0", self.callback_port), CallbackHandler)` listens on all network interfaces.~~
+- `HTTPServer((self.callback_bind_host, self.callback_port), CallbackHandler)` binds to the host and port supplied by config.
+- that removes the old hardcoded `0.0.0.0` behavior.
 
 Why this matters:
 - for a CLI OAuth callback, the normal expectation is a loopback-only listener
-- binding on all interfaces means other hosts on the LAN can reach the callback port while the auth window is open
+- a non-loopback configured bind still means other hosts on the LAN can reach the callback port while the auth window is open
 - state validation reduces exploitability, but the exposed listener is still unnecessary attack surface
 
 Recommended direction:
@@ -94,24 +103,26 @@ Recommended direction:
 - stop logging state fragments
 - keep high-level auth lifecycle messages without embedding token-derived values
 
-### 4. Medium: Redirect URI generation is topology-coupled and defaults to insecure HTTP
+### 4. Medium: callback settings are now explicit, but CLI-safe defaults still need stronger guidance
 Relevant code:
-- `cdflow_cli/utils/config.py:717-726`
-- `cdflow_cli/services/rollback_service.py:60-77`
-- `cdflow_cli/cli/commands_import.py:209-226`
+- `cdflow_cli/utils/config.py`
+- `cdflow_cli/adapters/nationbuilder/oauth.py`
 
 Current behavior:
-- if not explicitly provided, redirect URIs are synthesized as `http://{deployment.hostname}:{deployment.api_port}/callback`
-- rollback and import commands also synthesize the same pattern when filling missing fields
+~~- if not explicitly provided, redirect URIs are synthesized as `http://{deployment.hostname}:{deployment.api_port}/callback`
+- rollback and import commands also synthesize the same pattern when filling missing fields~~
+- the current callback contract is explicit in config:
+  - `nboauth.redirect_uri`
+  - `nboauth.callback.bind_host`
+  - `nboauth.callback.bind_port`
+- rollback and import no longer synthesize callback settings independently
 
 Why this matters:
-- the CLI callback model is being coupled to broader deployment topology
-- it encourages non-loopback callback URIs when the CLI normally wants local loopback behavior
-- it bakes in insecure HTTP by default
-- it is easy to end up with misleading or over-broad callback exposure
+- the stale deployment-derived behavior is gone, which is an improvement
+- the remaining security concern is operator guidance and safe defaults for CLI-local callback handling
+- non-loopback callback settings can still be configured, so the exposure question has shifted from hardcoded behavior to policy and documentation
 
 Recommended direction:
-- separate CLI callback configuration from application deployment topology
 - default CLI callback URI to loopback-only, e.g. `http://127.0.0.1:<port>/callback`
 - treat non-loopback callback hostnames as explicit operator overrides, not defaults
 
@@ -176,7 +187,7 @@ Recommended direction:
 
 ### Phase 1: Reduce exposure surface
 1. Bind CLI callback listener to `127.0.0.1` by default
-2. Decouple CLI callback host generation from deployment hostname
+2. Treat non-loopback callback settings as explicit operator overrides, not routine defaults
 3. Remove token suffix and state-fragment logging
 
 ### Phase 2: Fix token-state architecture

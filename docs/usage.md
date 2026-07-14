@@ -6,16 +6,16 @@ This guide provides detailed instructions for using the `cdflow init`, `cdflow i
 
 ## Setting Up Configuration (`cdflow init`)
 
-Before using `cdflow`, you need to set up configuration files and set environment variables. The `cdflow init` command creates a template configuration .yaml file that you can customize and oauth .env files as a check list of environment variables required for authentication to NationBuilder.
+Before using `cdflow`, you need to set up a YAML config file and the environment variables required for NationBuilder authentication. The `cdflow init` command creates starter templates for both.
 
 The default location for configuration `.yaml` files is `~/.config/cdflow/`. The location of config files is configurable.
-The default location for oauth `.env` files is `~/.env/`. The location of environment files is NOT configurable.
+The default location for OAuth `.env` files is `~/.env/`. The location of environment files is not configurable.
 
 ### About `.env` files
 
-A `.env` file is provided as a reference and template for the environment variables required for `cdflow` to authenticate and connect to your nation instance on NationBuilder.
+A `.env` file is provided as a reference and template for the environment variables required for `cdflow` to authenticate and connect to your NationBuilder instance.
 
-In a development scenario a `.env` file can be used to quickly and easily "`source`" the set of environment variables for a specific environment. Multiple `.env` files can be created, one for each unique environment, and can facilitate the easy switching between the multiple environments.
+In a development scenario a `.env` file can be used to quickly and easily `source` the set of environment variables for a specific environment. Multiple `.env` files can be created, one for each unique environment, and can facilitate easy switching between environments.
 
 In a production environment, as a security and privacy best practice, it is best to not store these secrets in plain text files and to instead use your system's secrets management and procedures to create the environment variables in the session(s) in which `cdflow` is needed.
   
@@ -24,11 +24,11 @@ In a production environment, as a security and privacy best practice, it is best
 ```bash
 cdflow init
 # creates config templates in default location (~/.config/cdflow/)
-# creates oauth .env files in non-configurable location (~/.env/)
+# creates OAuth .env files in non-configurable location (~/.env/)
 
 cdflow init --config-dir /path/to/config
 # creates config templates in the specified location (/path/to/config)
-# creates oauth .env files in non-configurable locaiton (~/.env/)
+# creates OAuth .env files in non-configurable location (~/.env/)
 ```
 
 This creates:  
@@ -49,8 +49,8 @@ If configuration and/or oauth files with the same filename(s) already exist, `cd
 
 Use `--force` to automatically overwrite without prompting.
   
-### Setting Up OAuth Credentials
-  
+### Setting Up OAuth Credentials And Callback Settings
+
 After running `cdflow init`, you need to configure your NationBuilder OAuth credentials:
 
 1. **Edit the OAuth template:**
@@ -63,10 +63,29 @@ After running `cdflow init`, you need to configure your NationBuilder OAuth cred
    NB_CLIENT_ID=your_actual_client_id
    NB_CLIENT_SECRET=your_actual_client_secret
    NB_SLUG=your_nation_slug
-   NB_CONFIG_NAME=name_for_this_configuration_eg_develoment
+   NB_CONFIG_NAME=name_for_this_configuration_eg_development
    ```
 
-3. **Source the environment using the provided `load-secrets.sh` shell script:**
+3. **Set the shared callback contract in your YAML config:**
+
+   ```yaml
+   nboauth:
+     redirect_uri: "http://localhost:8000/callback"
+     callback:
+       bind_host: "localhost"
+       bind_port: 8000
+   ```
+
+   The important rule is:
+   - `redirect_uri` must exactly match the callback URL registered in NationBuilder
+   - `callback.bind_host` and `callback.bind_port` should be populated from the host/port in `redirect_uri`
+
+   Example:
+   - `http://localhost:8000/callback` -> `bind_host=localhost`, `bind_port=8000`
+
+   These fields stay in the shared config shape used by both `cdflow-cli` and `ccflow-app`. In local CLI use, `cdflow-cli` actively uses `callback.bind_*` for its temporary callback listener.
+
+4. **Source the environment using the provided `load-secrets.sh` shell script:**
 
     #### Locate the `load-secrets.sh` script
 
@@ -119,7 +138,7 @@ This is the main command for importing donations into NationBuilder.
     cdflow import --type paypal --file /tmp/paypal_donations.csv --config /path/to/your/local.yaml
     ```
     
-    **Important:** When using CLI flags, both `--type` and `--file` must be used together. The configuration file is still required for OAuth settings, storage paths, and other configurations.
+    **Important:** When using CLI flags, both `--type` and `--file` must be used together. The configuration file is still required for callback settings, storage paths, and the rest of the shared config.
 
     ### Log Level Control
 
