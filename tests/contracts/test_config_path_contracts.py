@@ -21,6 +21,14 @@ class TestConfigPathContracts:
 
         assert resolved == Path("/worktree/configs/local.yaml")
 
+    def test_single_segment_dot_slash_path_resolves_from_current_working_directory(self):
+        fake_config_home = Path("/tmp/cdflow-config-home")
+
+        with patch.dict("os.environ", {"XDG_CONFIG_HOME": str(fake_config_home)}, clear=False):
+            resolved = resolve_config_path("./config.yaml")
+
+        assert resolved == Path.cwd() / "config.yaml"
+
     def test_absolute_path_is_preserved(self):
         absolute_path = Path("/etc/cdflow/config.yaml")
 

@@ -41,9 +41,12 @@ def resolve_config_path(config_path: Union[str, Path]) -> Path:
 
     Examples:
         resolve_config_path("config.yaml") -> ~/.config/caestudy/config.yaml
-        resolve_config_path("./config.yaml") -> ./config.yaml (as absolute)
+        resolve_config_path("./config.yaml") -> ./config.yaml (resolved from cwd)
         resolve_config_path("/etc/cdflow/config.yaml") -> /etc/cdflow/config.yaml
     """
+    # Check the original string for separators before Path() normalizes
+    # away a leading "./", which would misclassify "./config.yaml" as bare
+    raw_path_str = str(config_path)
     config_path = Path(config_path).expanduser()
 
     # If it's already absolute, use as-is
@@ -51,8 +54,7 @@ def resolve_config_path(config_path: Union[str, Path]) -> Path:
         return config_path
 
     # Check if path contains separators (indicating explicit relative path)
-    path_str = str(config_path)
-    if "/" in path_str or (os.name == "nt" and "\\" in path_str):
+    if "/" in raw_path_str or (os.name == "nt" and "\\" in raw_path_str):
         # Has explicit path separators, resolve relative to current directory
         return config_path.resolve()
 
