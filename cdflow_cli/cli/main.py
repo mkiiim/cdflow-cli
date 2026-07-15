@@ -99,6 +99,11 @@ Examples:
         choices=["DEBUG", "INFO", "WARNING", "NOTICE", "ERROR"],
         help="Console log level - NOTICE shows important milestones, ERROR shows only errors (default: INFO)",
     )
+    import_parser.add_argument(
+        "--log-os-log",
+        action="store_true",
+        help="Also send logs to macOS unified logging (Console.app)",
+    )
 
     # Rollback subcommand
     rollback_parser = subparsers.add_parser(
@@ -128,6 +133,11 @@ Examples:
         action="store_true",
         help="Skip interactive confirmation prompt once inputs are resolved",
     )
+    rollback_parser.add_argument(
+        "--log-os-log",
+        action="store_true",
+        help="Also send logs to macOS unified logging (Console.app)",
+    )
 
     args = parser.parse_args()
 
@@ -151,6 +161,8 @@ Examples:
             subcommand_args.extend(["--type", args.type])
         if getattr(args, "file", None):
             subcommand_args.extend(["--file", args.file])
+        if getattr(args, "log_os_log", False):
+            subcommand_args.append("--log-os-log")
         import_main(subcommand_args)
     elif args.command == "rollback":
         subcommand_args = ["--config", args.config, "--log-level", args.log_level]
@@ -160,6 +172,8 @@ Examples:
             subcommand_args.extend(["--output-dir", args.output_dir])
         if getattr(args, "yes", False):
             subcommand_args.append("--yes")
+        if getattr(args, "log_os_log", False):
+            subcommand_args.append("--log-os-log")
         rollback_main(subcommand_args)
     else:
         parser.print_help()

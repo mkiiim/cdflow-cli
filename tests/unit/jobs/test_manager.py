@@ -22,7 +22,6 @@ import tempfile
 from cdflow_cli.jobs.manager import JobManager, job_queue, jobs_store
 from cdflow_cli.jobs.models import JobStatus, JobResult
 from cdflow_cli.utils.config import ConfigProvider
-from cdflow_cli.utils.logging import LoggingProvider
 
 
 class TestJobManager:
@@ -37,10 +36,8 @@ class TestJobManager:
 
     @pytest.fixture
     def mock_logging(self):
-        """Mock logging provider."""
-        logging_provider = Mock(spec=LoggingProvider)
-        logging_provider.get_current_log_filename.return_value = "test_app.log"
-        return logging_provider
+        """Deprecated logging provider slot passed through to JobManager."""
+        return None
 
     @pytest.fixture
     def mock_paths(self):
@@ -67,8 +64,7 @@ class TestJobManager:
                 break
         jobs_store.clear()
         
-        with patch('cdflow_cli.jobs.manager.ImportLogExtractor'), \
-             patch('cdflow_cli.jobs.manager.DonationImportService'):
+        with patch('cdflow_cli.jobs.manager.DonationImportService'):
             manager = JobManager(mock_config, mock_logging)
             # Don't auto-start worker to avoid race conditions in tests
             manager.active = False

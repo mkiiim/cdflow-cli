@@ -7,7 +7,13 @@ from cdflow_cli.services.auth_service import AuthContext, UnifiedAuthService
 from cdflow_cli.utils.bootstrap import initialize_components_simplified
 from cdflow_cli.utils.config import ConfigProvider
 from cdflow_cli.utils.file_utils import safe_read_text_file
-from cdflow_cli.utils.logging import LoggingProvider, get_logging_provider
+from cdflow_cli.utils.logging import (
+    bind_job_context,
+    configure_logging,
+    get_current_log_file,
+    get_job_context,
+    reset_job_context,
+)
 from cdflow_cli.utils.paths import initialize_paths
 
 
@@ -16,8 +22,11 @@ class TestConsumingAppSurfaceContracts:
 
     def test_consuming_app_imported_symbols_are_available(self):
         assert ConfigProvider.__name__ == "ConfigProvider"
-        assert LoggingProvider.__name__ == "LoggingProvider"
-        assert callable(get_logging_provider)
+        assert callable(configure_logging)
+        assert callable(bind_job_context)
+        assert callable(reset_job_context)
+        assert callable(get_job_context)
+        assert callable(get_current_log_file)
         assert callable(safe_read_text_file)
         assert JobManager.__name__ == "JobManager"
         assert JobStatus.COMPLETED.value == "completed"
@@ -36,31 +45,45 @@ class TestConsumingAppSurfaceContracts:
         paths = Mock()
         paths.logs = tmp_path / "logs"
 
-        logging_provider = Mock(spec=LoggingProvider)
-        logging_provider.get_logger.return_value = Mock()
-
         with patch("cdflow_cli.utils.bootstrap.ConfigProvider", return_value=config):
             with patch("cdflow_cli.utils.bootstrap.initialize_paths", return_value=paths):
                 with patch(
-                    "cdflow_cli.utils.bootstrap.get_logging_provider",
-                    return_value=logging_provider,
-                ):
-                    result = initialize_components_simplified(
-                        config_path="/tmp/config.yaml",
-                        console_log_level="NOTICE",
-                    )
+                    "cdflow_cli.utils.bootstrap.configure_logging"
+                ) as mock_configure_logging:
+                    with patch(
+                        "cdflow_cli.utils.bootstrap.get_current_log_file",
+                        return_value=paths.logs / "cdflow.log",
+                    ):
+                        result = initialize_components_simplified(
+                            config_path="/tmp/config.yaml",
+                            console_log_level="NOTICE",
+                        )
 
         assert isinstance(result, tuple)
         assert len(result) == 3
         assert result[0] is config
-        assert result[1] is logging_provider
+        assert result[1] is None
         assert Path(result[2]).parent == paths.logs
 
-        logging_provider.configure_logging.assert_called_once()
-        _, kwargs = logging_provider.configure_logging.call_args
-        assert kwargs["log_level"] == "DEBUG"
-        assert kwargs["early_init"] is True
-        assert kwargs["log_filename"].startswith("APP_")
+        mock_configure_logging.assert_called_once()
+        _, kwargs = mock_configure_logging.call_args
+        assert kwargs["mode"] == "cli"
+        assert kwargs["level"] == "NOTICE"
+        assert kwargs["log_file"] is True
+        assert kwargs["file_level"] == "DEBUG"
+        assert Path(kwargs["log_file_path"]).name == "cdflow.log"
+
+    def test_job_context_binding_roundtrip_for_host_app_tasks(self):
+        token = bind_job_context(job_id="job-123", user_id=7, nation_slug="demo")
+        try:
+            assert get_job_context() == {
+                "job_id": "job-123",
+                "user_id": 7,
+                "nation_slug": "demo",
+            }
+        finally:
+            reset_job_context(token)
+        assert get_job_context() == {}
 
     def test_job_result_exposes_consuming_app_artifact_fields(self):
         result = JobResult(
@@ -69,7 +92,7 @@ class TestConsumingAppSurfaceContracts:
             total_count=5,
             success_file="job-123_success.csv",
             fail_file="job-123_fail.csv",
-            log_file="IMPORTDONATIONS_20260404-105551_job-123.log",
+            log_file="cdflow.log",
             artifacts={
                 "success": JobArtifact(
                     path="job-123_success.csv",
@@ -82,5 +105,5 @@ class TestConsumingAppSurfaceContracts:
 
         assert result.success_file == "job-123_success.csv"
         assert result.fail_file == "job-123_fail.csv"
-        assert result.log_file == "IMPORTDONATIONS_20260404-105551_job-123.log"
+        assert result.log_file == "cdflow.log"
         assert result.artifacts["success"].path == "job-123_success.csv"

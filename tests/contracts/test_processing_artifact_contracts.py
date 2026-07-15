@@ -1,7 +1,7 @@
+from contextlib import nullcontext
 from unittest.mock import Mock, patch
 
 from cdflow_cli.cli.commands_rollback import process_rollback_data
-from cdflow_cli.jobs.extractor import ImportLogExtractor
 from cdflow_cli.services.import_service import DonationImportService
 
 
@@ -15,7 +15,7 @@ class TestImportArtifactContracts:
         mock_paths = Mock()
 
         with patch("cdflow_cli.services.import_service.get_paths", return_value=mock_paths):
-            with patch("cdflow_cli.services.import_service.get_logging_provider", return_value=Mock()):
+            with nullcontext():
                 service = DonationImportService(config_provider=mock_config)
 
         service.now_str = "20260404-105551"
@@ -35,7 +35,7 @@ class TestImportArtifactContracts:
         mock_paths.output = tmp_path
 
         with patch("cdflow_cli.services.import_service.get_paths", return_value=mock_paths):
-            with patch("cdflow_cli.services.import_service.get_logging_provider", return_value=Mock()):
+            with nullcontext():
                 service = DonationImportService(config_provider=mock_config)
 
         filename = "artifact.csv"
@@ -69,7 +69,7 @@ class TestImportArtifactContracts:
         mock_paths = Mock()
 
         with patch("cdflow_cli.services.import_service.get_paths", return_value=mock_paths):
-            with patch("cdflow_cli.services.import_service.get_logging_provider", return_value=Mock()):
+            with nullcontext():
                 service = DonationImportService(config_provider=mock_config)
 
         with patch.object(service, "determine_input_file", return_value=(None, None, None)):
@@ -78,26 +78,6 @@ class TestImportArtifactContracts:
         assert success is False
         assert success_count == 0
         assert fail_count == 0
-
-    def test_job_side_import_log_name_keeps_import_prefix_timestamp_and_job_id(self):
-        extractor = ImportLogExtractor.__new__(ImportLogExtractor)
-
-        filename = extractor._generate_import_log_filename(
-            job_id="job-123",
-            start_time="2026-04-04T10:55:51Z",
-            original_filename="uploads/monthly-giving.csv",
-        )
-
-        assert filename == "IMPORTDONATIONS_20260404-105551_job-123_monthly-giving.log"
-
-    def test_extractor_prefers_explicit_job_owned_log_filename(self):
-        extractor = ImportLogExtractor.__new__(ImportLogExtractor)
-        extractor.logging_provider = Mock()
-
-        filename = extractor._get_current_api_log_file("APP_20260404_105551.log")
-
-        assert filename == "APP_20260404_105551.log"
-
 
 class TestRollbackArtifactContracts:
     """Behavior-first contracts for rollback core processing."""

@@ -11,7 +11,6 @@ from io import StringIO
 from cdflow_cli.cli.commands_import import (
     clear_screen,
     get_encoding,
-    initialize_logging,
     parse_arguments,
     prompt_for_confirmation,
     validate_import_file,
@@ -121,59 +120,6 @@ class TestGetEncoding:
             assert encoding == 'utf-8'  # Default fallback
             assert confidence == 0.0    # Low confidence
             assert "Error detecting file encoding" in caplog.text
-
-
-class TestInitializeLogging:
-    """Test logging initialization functionality."""
-    
-    def test_initialize_logging_with_config(self, base_mock_config):
-        """Test logging initialization with configuration."""
-        with patch('cdflow_cli.cli.commands_import.get_logging_provider') as mock_get_provider:
-            mock_provider = Mock()
-            mock_get_provider.return_value = mock_provider
-            
-            provider, log_path = initialize_logging(base_mock_config)
-            
-            assert provider == mock_provider
-            assert log_path is None  # Not early init
-            mock_provider.configure_logging.assert_called_once_with(log_level='DEBUG', early_init=False)
-    
-    def test_initialize_logging_early_init(self, base_mock_config):
-        """Test early logging initialization."""
-        base_mock_config.get_logging_config.return_value = {'provider': 'file', 'file_level': 'INFO'}
-        
-        with patch('cdflow_cli.cli.commands_import.get_logging_provider') as mock_get_provider:
-            mock_provider = Mock()
-            mock_provider.configure_logging.return_value = '/path/to/log'
-            mock_get_provider.return_value = mock_provider
-            
-            provider, log_path = initialize_logging(base_mock_config, early_init=True)
-            
-            assert provider == mock_provider
-            assert log_path == '/path/to/log'
-            # Should call configure_logging with log_filename and early_init=True
-            call_args = mock_provider.configure_logging.call_args
-            assert call_args[1]['early_init'] is True
-            assert 'IMPORTDONATIONS_' in call_args[1]['log_filename']
-    
-    def test_initialize_logging_no_config(self):
-        """Test logging initialization without configuration."""
-        mock_config = Mock()
-        mock_config.get_logging_config.return_value = None
-        
-        with patch('cdflow_cli.cli.commands_import.get_logging_provider') as mock_get_provider:
-            mock_provider = Mock()
-            mock_get_provider.return_value = mock_provider
-            
-            provider, log_path = initialize_logging(mock_config)
-            
-            # Should use default config
-            expected_config = {
-                'provider': 'file',
-                'settings': {'directory': './logs', 'level': 'DEBUG', 'console_level': 'INFO'}
-            }
-            mock_get_provider.assert_called_once_with(expected_config)
-            mock_provider.configure_logging.assert_called_once_with(log_level='DEBUG', early_init=False)
 
 
 class TestParseArguments:
@@ -547,23 +493,21 @@ class TestMainFunction:
         args.log_level = 'INFO'
         args.type = None
         args.file = None
+        args.log_os_log = False
         mock_parse.return_value = args
-        
+
         # Setup component initialization
         mock_config = Mock()
-        mock_logging_provider = Mock()
-        mock_logger = Mock()
-        mock_logging_provider.get_logger.return_value = mock_logger
-        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
-        
+        mock_initialize.return_value = (mock_config, None, '/path/to/log')
+
         # Setup CLI execution
         mock_run_cli.return_value = 0
-        
+
         result = main()
-        
+
         assert result == 0
-        mock_initialize.assert_called_once_with('config.yaml', 'INFO')
-        mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider)
+        mock_initialize.assert_called_once_with('config.yaml', 'INFO', os_log=False)
+        mock_run_cli.assert_called_once_with(mock_config)
     
     @patch('cdflow_cli.cli.commands_import.initialize_cli_components')
     @patch('cdflow_cli.cli.commands_import.run_cli')
@@ -576,16 +520,14 @@ class TestMainFunction:
         args.log_level = 'DEBUG'
         args.type = 'paypal'
         args.file = 'override.csv'
+        args.log_os_log = False
         mock_parse.return_value = args
-        
+
         # Setup component initialization
         mock_config = Mock()
         mock_config._cli_override = {}  # Make it support item assignment
-        mock_logging_provider = Mock()
-        mock_logger = Mock()
-        mock_logging_provider.get_logger.return_value = mock_logger
-        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
-        
+        mock_initialize.return_value = (mock_config, None, '/path/to/log')
+
         mock_run_cli.return_value = 0
         
         result = main()
@@ -598,20 +540,14 @@ class TestMainFunction:
 
 
 class TestRunCliFallback:
-    """Test provider-less run_cli behavior."""
+    """Test config-less run_cli behavior."""
 
-    @patch('cdflow_cli.cli.commands_import.FileLoggingProvider')
-    def test_run_cli_fails_fast_without_bootstrap_providers(self, mock_file_logging_provider_cls):
-        """Test provider-less run_cli exits with an explicit bootstrap error."""
-        early_provider = Mock()
-        early_logger = Mock()
-        early_provider.get_logger.return_value = early_logger
-        mock_file_logging_provider_cls.return_value = early_provider
-
+    def test_run_cli_fails_fast_without_bootstrap_config(self, caplog):
+        """Test config-less run_cli exits with an explicit bootstrap error."""
         result = run_cli()
 
         assert result == 1
-        early_logger.error.assert_called_once_with(
-            "run_cli requires injected config and logging providers; call main() or initialize CLI bootstrap first"
+        assert (
+            "run_cli requires an injected config provider; call main() or initialize CLI bootstrap first"
+            in caplog.text
         )
-        early_provider.shutdown.assert_called_once()

@@ -37,6 +37,7 @@ dependencies = [
     "langcodes[data]>=3.3.0",
     "blessed>=1.17.0",
     "pydantic>=1.8.0",
+    "structlog>=24.0.0",
     "uneff>=1.0.1",
     "importlib-metadata>=1.0.0; python_version<'3.8'",
 ]

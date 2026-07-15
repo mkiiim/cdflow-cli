@@ -606,12 +606,16 @@ class TestRunRollbackCli:
         mock_init_paths.return_value = mock_dependencies['paths']
         mock_rollback_service_class.return_value = mock_dependencies['rollback_service']
         mock_get_files.return_value = []  # No success files
-        
-        result = run_rollback_cli(
-            mock_dependencies['config'],
-            mock_dependencies['logging_provider']
-        )
-        
+
+        with patch(
+            'cdflow_cli.cli.commands_rollback.logging.getLogger',
+            return_value=mock_dependencies['logger'],
+        ):
+            result = run_rollback_cli(
+                mock_dependencies['config'],
+                mock_dependencies['logging_provider']
+            )
+
         assert result == 1
         mock_dependencies['logger'].error.assert_called_with(
             "❌ No _success.csv files found in output directory"
@@ -638,12 +642,16 @@ class TestRunRollbackCli:
         mock_menu_class.return_value = mock_menu
         
         mock_input.return_value = ''  # User continues to menu
-        
-        result = run_rollback_cli(
-            mock_dependencies['config'],
-            mock_dependencies['logging_provider']
-        )
-        
+
+        with patch(
+            'cdflow_cli.cli.commands_rollback.logging.getLogger',
+            return_value=mock_dependencies['logger'],
+        ):
+            result = run_rollback_cli(
+                mock_dependencies['config'],
+                mock_dependencies['logging_provider']
+            )
+
         assert result == 1
         mock_dependencies['logger'].info.assert_called_with("No file selected. Exiting.")
     
@@ -651,11 +659,15 @@ class TestRunRollbackCli:
         """Test CLI exception handling."""
         # Mock to raise exception during execution
         with patch('cdflow_cli.utils.paths.initialize_paths', side_effect=Exception("Test error")):
-            result = run_rollback_cli(
-                mock_dependencies['config'],
-                mock_dependencies['logging_provider']
-            )
-        
+            with patch(
+                'cdflow_cli.cli.commands_rollback.logging.getLogger',
+                return_value=mock_dependencies['logger'],
+            ):
+                result = run_rollback_cli(
+                    mock_dependencies['config'],
+                    mock_dependencies['logging_provider']
+                )
+
         assert result == 1
         mock_dependencies['logger'].error.assert_called()
     
@@ -682,19 +694,22 @@ class TestMainFunction:
         args.success_file = None
         args.output_dir = None
         args.yes = False
+        args.log_os_log = False
         mock_parse.return_value = args
         # Setup component initialization
         mock_config = Mock()
-        mock_logging_provider = Mock()
+        mock_logging_provider = None
         mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
 
         # Setup CLI execution
         mock_run_cli.return_value = 0
 
         result = main()
-        
+
         assert result == 0
-        mock_initialize.assert_called_once_with('config.yaml', 'INFO', require_existing_config=True)
+        mock_initialize.assert_called_once_with(
+            'config.yaml', 'INFO', require_existing_config=True, os_log=False
+        )
         mock_run_cli.assert_called_once_with(mock_config, mock_logging_provider, success_file=None, output_dir=None, auto_confirm=False)
     
     @patch('cdflow_cli.cli.commands_rollback.initialize_cli_components')
@@ -721,16 +736,18 @@ class TestMainFunction:
         args = Mock()
         args.config = 'config.yaml'
         args.log_level = 'DEBUG'
+        args.log_os_log = False
         mock_parse.return_value = args
         mock_config = Mock()
-        mock_logging_provider = Mock()
-        mock_initialize.return_value = (mock_config, mock_logging_provider, '/path/to/log')
+        mock_initialize.return_value = (mock_config, None, '/path/to/log')
         mock_run_cli.return_value = 0
-        
+
         result = main()
-        
+
         assert result == 0
-        mock_initialize.assert_called_once_with('config.yaml', 'DEBUG', require_existing_config=True)
+        mock_initialize.assert_called_once_with(
+            'config.yaml', 'DEBUG', require_existing_config=True, os_log=False
+        )
     
     @patch('argparse.ArgumentParser.parse_args')
     def test_main_argument_parsing_choices(self, mock_parse):

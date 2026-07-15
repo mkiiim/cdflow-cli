@@ -243,12 +243,13 @@ class TestDonationRollbackService:
         mock_config_provider.get_oauth_config.assert_called()
     
     def test_confirm_rollback_yes(self, mock_config_provider, mock_logging_provider):
-        """Test logging provider integration."""
+        """Test deprecated logging provider is stored but not used for loggers."""
         service = DonationRollbackService(mock_config_provider, mock_logging_provider)
-        
-        # Test that logging provider is properly set and logger is created
+
+        # Provider slot kept for backwards compatibility; logger comes from stdlib
         assert service.logging_provider is mock_logging_provider
-        mock_logging_provider.get_logger.assert_called_once_with('cdflow_cli.services.rollback_service')
+        assert service.logger.name == 'cdflow_cli.services.rollback_service'
+        mock_logging_provider.get_logger.assert_not_called()
     
     def test_confirm_rollback_no(self, mock_config_provider, mock_logging_provider):
         """Test PayPal import type handling."""
