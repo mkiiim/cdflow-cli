@@ -10,13 +10,13 @@ The `cdflow init` command generates configuration templates that you can customi
 
 ```bash
 cdflow init
-# Creates templates in ~/.config/cdflow/ and ~/.env/
+# Creates templates in ~/.config/caestudy/ and ~/.env/
 ```
 
 This creates:
-- `~/.config/cdflow/local.yaml` - Main application configuration file
+- `~/.config/caestudy/local.yaml` - Main application configuration file
 - `~/.env/nb_local.env` - OAuth environment variables template
-- `~/.config/cdflow/plugins/` - Plugin examples for customization 
+- `~/.config/caestudy/plugins/` - Plugin examples for customization 
 
 ## Application Configuration File (e.g., `local.yaml`)
 
@@ -168,10 +168,10 @@ This section configures the plugin system for customizing donation data processi
 plugins:
   canadahelps:
     enabled: true
-    dir: "~/.config/cdflow/plugins/canadahelps"
+    dir: "~/.config/caestudy/plugins/canadahelps"
   paypal:
     enabled: true
-    dir: "~/.config/cdflow/plugins/paypal"
+    dir: "~/.config/caestudy/plugins/paypal"
 ```
 
 - `enabled`: Set to `true` to load and execute plugins for this adapter

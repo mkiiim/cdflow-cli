@@ -6,13 +6,13 @@ This is the standard mapping that translates CanadaHelps terminology to
 NationBuilder's payment type vocabulary.
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/canadahelps/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/canadahelps/)
 2. Customize the mapping if your NationBuilder has different payment types
 3. Enable plugins in your config:
    plugins:
      canadahelps:
        enabled: true
-       dir: "~/.config/cdflow/plugins/canadahelps"
+       dir: "~/.config/caestudy/plugins/canadahelps"
 4. Run your import as normal
 
 Customization:

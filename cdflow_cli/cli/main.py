@@ -48,8 +48,8 @@ def main():
         epilog="""
 Examples:
   cdflow --version               # Show version information
-  cdflow init                    # Create config templates in default directory (~/.config/cdflow/)
-  cdflow init --config-dir ~/.config/cdflow  # Create templates in specific directory
+  cdflow init                    # Create config templates in default directory (~/.config/caestudy/)
+  cdflow init --config-dir ~/.config/caestudy  # Create templates in specific directory
   cdflow import --config config.yaml
   cdflow import --type canadahelps --file donations/file.csv --config config.yaml
   cdflow import --type paypal --file /tmp/paypal.csv --config config.yaml
@@ -64,7 +64,7 @@ Examples:
     # Init subcommand
     init_parser = subparsers.add_parser("init", help="Initialize configuration templates")
     init_parser.add_argument(
-        "--config-dir", help="Directory to create configuration files (default: ~/.config/cdflow/)"
+        "--config-dir", help="Directory to create configuration files (default: ~/.config/caestudy/)"
     )
     init_parser.add_argument(
         "--org-logo", help="Path to your organization's logo file to customize the interface"

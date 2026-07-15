@@ -7,13 +7,13 @@ from cdflow_cli.utils.config_paths import resolve_config_path
 class TestConfigPathContracts:
     """Behavior-first contracts for config path resolution."""
 
-    def test_bare_filename_resolves_under_xdg_cdflow_directory(self):
+    def test_bare_filename_resolves_under_xdg_caestudy_directory(self):
         fake_config_home = Path("/tmp/cdflow-config-home")
 
         with patch.dict("os.environ", {"XDG_CONFIG_HOME": str(fake_config_home)}, clear=False):
             resolved = resolve_config_path("config.yaml")
 
-        assert resolved == fake_config_home / "cdflow" / "config.yaml"
+        assert resolved == fake_config_home / "caestudy" / "config.yaml"
 
     def test_explicit_relative_path_resolves_from_current_working_directory(self):
         with patch("pathlib.Path.resolve", return_value=Path("/worktree/configs/local.yaml")):

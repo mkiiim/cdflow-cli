@@ -8,7 +8,7 @@ This guide provides detailed instructions for using the `cdflow init`, `cdflow i
 
 Before using `cdflow`, you need to set up a YAML config file and the environment variables required for NationBuilder authentication. The `cdflow init` command creates starter templates for both.
 
-The default location for configuration `.yaml` files is `~/.config/cdflow/`. The location of config files is configurable.
+The default location for configuration `.yaml` files is `~/.config/caestudy/`. The location of config files is configurable.
 The default location for OAuth `.env` files is `~/.env/`. The location of environment files is not configurable.
 
 ### About `.env` files
@@ -23,7 +23,7 @@ In a production environment, as a security and privacy best practice, it is best
   
 ```bash
 cdflow init
-# creates config templates in default location (~/.config/cdflow/)
+# creates config templates in default location (~/.config/caestudy/)
 # creates OAuth .env files in non-configurable location (~/.env/)
 
 cdflow init --config-dir /path/to/config
@@ -32,12 +32,12 @@ cdflow init --config-dir /path/to/config
 ```
 
 This creates:  
-- `~/.config/cdflow/local.yaml` - Main application configuration file (default location)  
+- `~/.config/caestudy/local.yaml` - Main application configuration file (default location)  
 - `~/.env/nb_local.env` - OAuth environment variables template (non-configurable location)
   
 ### Options
   
-- `--config-dir`: Directory to specify the location to write configuration template file (default: `~/.config/cdflow/`)
+- `--config-dir`: Directory to specify the location to write configuration template file (default: `~/.config/caestudy/`)
 - `--force`: Overwrite existing files with templates without prompting
   
 ### File Conflict Handling

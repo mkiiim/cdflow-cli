@@ -64,7 +64,7 @@ def load_plugins(adapter: str, plugins_dir: Path) -> int:
         Number of plugins loaded
 
     Example:
-        plugins_path = Path("~/.config/cdflow/plugins/canadahelps").expanduser()
+        plugins_path = Path("~/.config/caestudy/plugins/canadahelps").expanduser()
         count = load_plugins("canadahelps", plugins_path)
         logger.info(f"Loaded {count} plugins")
     """

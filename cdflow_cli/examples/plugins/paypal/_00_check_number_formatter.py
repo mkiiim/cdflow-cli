@@ -8,13 +8,13 @@ sources in NationBuilder.
 Default: Prefixes transaction ID with "PP_" (PayPal)
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/paypal/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/paypal/)
 2. Customize the prefix or formatting logic for your organization
 3. Enable plugins in your config:
    plugins:
      paypal:
        enabled: true
-       dir: "~/.config/cdflow/plugins/paypal"
+       dir: "~/.config/caestudy/plugins/paypal"
 4. Run your import as normal
 
 Customization:

@@ -113,7 +113,7 @@ cli_import:
 plugins:
   canadahelps:
     # enabled: false
-    # dir: "~/.config/cdflow/plugins/canadahelps"
+    # dir: "~/.config/caestudy/plugins/canadahelps"
     #
     # To use: set enabled=true, create .py files in dir
     # Files execute alphabetically (use 01_, 02_ prefixes for ordering)
@@ -129,5 +129,5 @@ plugins:
 
   paypal:
     # enabled: false
-    # dir: "~/.config/cdflow/plugins/paypal"
+    # dir: "~/.config/caestudy/plugins/paypal"
     # Same plugin pattern as CanadaHelps above
