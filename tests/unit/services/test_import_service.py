@@ -1,4 +1,5 @@
 import pytest
+from contextlib import nullcontext
 from unittest.mock import Mock, patch, MagicMock
 from cdflow_cli.services.import_service import DonationImportService
 from cdflow_cli.plugins.registry import PluginBundle
@@ -28,13 +29,10 @@ class TestDonationImportServiceSimple:
     def test_init_with_config_provider(self, mock_config_provider):
         """Test initialization with existing config provider."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider') as mock_logging_provider:
+            with nullcontext():
                 # Mock paths system
                 mock_paths.side_effect = RuntimeError('Not initialized')
-                
-                # Mock logging provider
-                mock_logging_provider.return_value = Mock()
-                
+
                 service = DonationImportService(config_provider=mock_config_provider)
                 assert service.config == mock_config_provider
                 assert service.job_context is None
@@ -44,13 +42,10 @@ class TestDonationImportServiceSimple:
         job_context = {'job_id': 'test-123', 'machine_info': 'test-machine'}
         
         with patch('cdflow_cli.services.import_service.get_paths') as mock_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider') as mock_logging_provider:
+            with nullcontext():
                 # Mock paths system
                 mock_paths.side_effect = RuntimeError('Not initialized')
-                
-                # Mock logging provider
-                mock_logging_provider.return_value = Mock()
-                
+
                 service = DonationImportService(
                     config_provider=mock_config_provider,
                     job_context=job_context
@@ -61,7 +56,7 @@ class TestDonationImportServiceSimple:
     def test_append_row_to_file_filters_plugin_fields(self, mock_config_provider, tmp_path):
         """Test that _append_row_to_file filters out plugin-added fields."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 # Mock paths to use tmp_path
                 mock_paths = Mock()
                 mock_paths.output = tmp_path
@@ -107,7 +102,7 @@ class TestDonationImportServiceSimple:
     def test_lookup_person_with_plugins_uses_explicit_bundle(self, mock_config_provider):
         """Test that person lookup uses the run-scoped bundle before the global registry."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -143,7 +138,7 @@ class TestDonationImportServiceSimple:
     ):
         """Test that empty bundles still fall back to donation default lookup."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -174,7 +169,7 @@ class TestDonationImportServiceSimple:
     def test_resolve_import_adapter_returns_paypal_mapper_and_bundle(self, mock_config_provider):
         """Test adapter resolution returns the mapper class and run-scoped bundle."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -205,7 +200,7 @@ class TestDonationImportServiceSimple:
     ):
         """Test person creation/update path remains isolated in the extracted helper."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -235,7 +230,7 @@ class TestDonationImportServiceSimple:
     def test_find_or_create_donation_returns_existing_donation(self, mock_config_provider):
         """Test donation helper preserves existing-donation semantics."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -260,7 +255,7 @@ class TestDonationImportServiceSimple:
     def test_record_successful_row_writes_ids_and_existing_message(self, mock_config_provider):
         """Test success-row helper writes IDs and only keeps message for existing donations."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -289,7 +284,7 @@ class TestDonationImportServiceSimple:
     ):
         """Test failure helper cleans up created people and continues on successful cleanup."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -321,7 +316,7 @@ class TestDonationImportServiceSimple:
     def test_handle_unexpected_row_failure_records_prefixed_message(self, mock_config_provider):
         """Test unexpected-failure helper writes a prefixed error message."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -343,7 +338,7 @@ class TestDonationImportServiceSimple:
     def test_prepare_import_rows_returns_none_when_csv_has_no_rows(self, mock_config_provider):
         """Test import preparation stops cleanly on empty CSV content."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_paths.app_processing = Mock()
                 mock_paths.app_processing.__truediv__ = Mock(return_value="ignored.csv")
@@ -370,7 +365,7 @@ class TestDonationImportServiceSimple:
     def test_process_single_row_returns_failure_for_invalid_row(self, mock_config_provider):
         """Test single-row processing short-circuits invalid rows."""
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 
@@ -420,7 +415,7 @@ class TestDonationImportServiceSimple:
         }
 
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 with patch('cdflow_cli.services.import_service.create_cli_auth_service') as mock_create_auth_service:
                     mock_paths = Mock()
                     mock_get_paths.return_value = mock_paths
@@ -466,7 +461,7 @@ class TestDonationImportServiceSimple:
         }
 
         with patch('cdflow_cli.services.import_service.get_paths') as mock_get_paths:
-            with patch('cdflow_cli.services.import_service.get_logging_provider'):
+            with nullcontext():
                 mock_paths = Mock()
                 mock_get_paths.return_value = mock_paths
 

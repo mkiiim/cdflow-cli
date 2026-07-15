@@ -8,13 +8,13 @@ sources in NationBuilder.
 Default: Prefixes transaction number with "CH_" (CanadaHelps)
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/canadahelps/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/canadahelps/)
 2. Customize the prefix or formatting logic for your organization
 3. Enable plugins in your config:
    plugins:
      canadahelps:
        enabled: true
-       dir: "~/.config/cdflow/plugins/canadahelps"
+       dir: "~/.config/caestudy/plugins/canadahelps"
 4. Run your import as normal
 
 Customization:

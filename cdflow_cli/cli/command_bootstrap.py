@@ -19,7 +19,8 @@ def initialize_cli_components(
     log_level: str,
     *,
     require_existing_config: bool = False,
-) -> Tuple[object, object, str]:
+    os_log: bool = False,
+) -> Tuple[object, None, str]:
     """
     Resolve config path and initialize shared CLI runtime components.
 
@@ -27,9 +28,10 @@ def initialize_cli_components(
         config_path: User-provided config path argument
         log_level: Requested console log level
         require_existing_config: Whether to fail fast if the resolved config file is missing
+        os_log: Whether to also send records to macOS unified logging
 
     Returns:
-        Tuple of (config, logging_provider, app_log_path)
+        Tuple of (config, None, app_log_path)
 
     Raises:
         FileNotFoundError: If require_existing_config is True and the resolved config file is missing
@@ -42,4 +44,5 @@ def initialize_cli_components(
     return initialize_components_simplified(
         config_path=str(resolved_config_path),
         console_log_level=log_level,
+        os_log=os_log,
     )

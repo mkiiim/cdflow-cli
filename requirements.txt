@@ -34,6 +34,8 @@ requests==2.32.5
     # via cdflow-cli (pyproject.toml)
 six==1.17.0
     # via python-dateutil
+structlog==26.1.0
+    # via cdflow-cli (pyproject.toml)
 typing-extensions==4.15.0
     # via
     #   pydantic

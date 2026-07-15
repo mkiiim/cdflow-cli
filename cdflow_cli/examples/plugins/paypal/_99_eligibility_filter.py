@@ -15,14 +15,14 @@ This example shows a common pattern:
 - Additional business rules can be added (date ranges, amounts, etc.)
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/paypal/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/paypal/)
 2. Customize the eligibility rules for your organization
 3. Use 99_ prefix to ensure this runs last
 4. Enable plugins in your config:
    plugins:
      paypal:
        enabled: true
-       dir: "~/.config/cdflow/plugins/paypal"
+       dir: "~/.config/caestudy/plugins/paypal"
 5. Run your import as normal
 
 Plugin Ordering:

@@ -8,13 +8,13 @@ This example shows a common pattern: separate tracking codes for monthly
 vs one-time donations based on the Item Title field.
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/paypal/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/paypal/)
 2. Customize the mapping logic for your organization
 3. Enable plugins in your config:
    plugins:
      paypal:
        enabled: true
-       dir: "~/.config/cdflow/plugins/paypal"
+       dir: "~/.config/caestudy/plugins/paypal"
 4. Run your import as normal
 
 Customization:

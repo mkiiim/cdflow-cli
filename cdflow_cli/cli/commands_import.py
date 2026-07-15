@@ -10,7 +10,6 @@ import sys
 import yaml
 import logging
 import argparse
-import datetime
 import uuid
 import time
 import shutil
@@ -22,7 +21,7 @@ from cdflow_cli.utils import start_fresh_output, clear_screen
 from .command_bootstrap import STANDARD_LOG_LEVEL_CHOICES, initialize_cli_components
 from .file_encoding import detect_file_encoding
 from ..utils.config import ConfigProvider
-from ..utils.logging import get_logging_provider, LoggingProvider, FileLoggingProvider
+from ..utils.logging import configure_logging, get_current_log_file
 
 # Initialize module-level logger
 logger = logging.getLogger(__name__)
@@ -59,50 +58,6 @@ def get_encoding(file_path: str, paths=None) -> Tuple[str, float]:
         return "utf-8", 0.0  # Default to UTF-8 with low confidence
 
 
-def initialize_logging(
-    config_provider: ConfigProvider, early_init: bool = False
-) -> Tuple[LoggingProvider, Optional[str]]:
-    """
-    Initialize logging using the configuration provider.
-
-    Args:
-        config_provider: Configuration provider containing logging settings
-        early_init: Whether this is an early initialization
-
-    Returns:
-        Tuple of (LoggingProvider, log_path or None)
-    """
-    # Get logging configuration
-    logging_config = config_provider.get_logging_config()
-
-    # If no logging configuration exists, use default
-    if not logging_config:
-        logging_config = {
-            "provider": "file",
-            "settings": {"directory": "./logs", "level": "DEBUG", "console_level": "INFO"},
-        }
-
-    # Create the logging provider
-    logging_provider = get_logging_provider(logging_config)
-
-    # Set log level from runtime settings if specified
-    # Get log level from new logging config structure
-    file_level = logging_config.get("file_level", "DEBUG") if logging_config else "DEBUG"
-    log_level = file_level if file_level != "NONE" else "DEBUG"
-
-    # Configure logging
-    if early_init:
-        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        log_filename = f"IMPORTDONATIONS_{timestamp}_early_init.log"
-        log_path = logging_provider.configure_logging(
-            log_filename=log_filename, log_level=log_level or "DEBUG", early_init=True
-        )
-        return logging_provider, log_path
-    else:
-        logging_provider.configure_logging(log_level=log_level or "DEBUG", early_init=False)
-        return logging_provider, None
-
-
 def parse_arguments(argv=None) -> argparse.Namespace:
     """
     Parse command line arguments.
@@ -129,6 +84,11 @@ def parse_arguments(argv=None) -> argparse.Namespace:
         help="Import source type (overrides config file)",
     )
     parser.add_argument("--file", help="CSV file path to import (overrides config file)")
+    parser.add_argument(
+        "--log-os-log",
+        action="store_true",
+        help="Also send logs to macOS unified logging (Console.app)",
+    )
     args = parser.parse_args(argv)
     return args
 
@@ -168,25 +128,24 @@ def run_cli(config=None, logging_provider=None) -> int:
 
     Args:
         config: ConfigProvider instance (from bootstrap)
-        storage: Storage provider instance (from bootstrap)
-        logging_provider: Logging provider instance (from bootstrap)
+        logging_provider: Deprecated, ignored; logging is configured
+            process-wide by configure_logging() during bootstrap
 
     Returns:
         int: Exit status code (0 for success, non-zero for errors)
     """
-    # Use providers from bootstrap (same pattern as API server)
-    if not all([config, logging_provider]):
-        fallback_logging_provider = FileLoggingProvider(base_path="./logs", console_level="INFO")
-        fallback_logging_provider.initialize_bootstrap_logging()
-        logger = fallback_logging_provider.get_logger(__name__)
+    # Use config from bootstrap (same pattern as API server)
+    if not config:
+        if not logging.getLogger().handlers:
+            configure_logging(mode="cli")
+        logger = logging.getLogger(__name__)
         logger.error(
-            "run_cli requires injected config and logging providers; call main() or initialize CLI bootstrap first"
+            "run_cli requires an injected config provider; call main() or initialize CLI bootstrap first"
         )
-        fallback_logging_provider.shutdown()
         return 1
 
-    logger = logging_provider.get_logger(__name__)
-    logger.debug("Using providers from bootstrap initialization")
+    logger = logging.getLogger(__name__)
+    logger.debug("Using config from bootstrap initialization")
 
     try:
         # Display startup message with formatting
@@ -239,22 +198,14 @@ def run_cli(config=None, logging_provider=None) -> int:
         # Initialize job manager for CLI job system integration
         from ..jobs import JobManager
 
-        job_manager = JobManager(config, logging_provider)
+        job_manager = JobManager(config)
 
         # Run CLI with job system
         return run_cli_with_jobs(job_manager, config, oauth_tokens)
     except Exception as e:
         # Ensure we log any unexpected exceptions
-        if logging_provider:
-            logger = logging_provider.get_logger(__name__)
-            logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-        else:
-            print(f"Unhandled exception: {str(e)}")
+        logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
         return 1
-    finally:
-        # Clean up logging if needed
-        if logging_provider:
-            logging_provider.shutdown()
 
 
 def validate_import_file(
@@ -432,7 +383,8 @@ def monitor_cli_job(job_manager, job_id: str) -> int:
             logger.notice(f"❌ Failed donations: {result['fail_count']} records")
             logger.notice(f"📝 Success file: {result['success_file']}")
             logger.notice(f"📝 Fail file: {result['fail_file']}")
-            logger.notice(f"📝 Log file: {result['log_file']}")
+            if result.get("log_file"):
+                logger.notice(f"📝 Log file: {result['log_file']}")
             logger.notice(f"{'═'*80}")
             return 0
         else:
@@ -528,14 +480,8 @@ def run_cli_with_jobs(job_manager, config: ConfigProvider, oauth_tokens: Dict[st
 
         # Create job
         logger.info(f"Creating job from CLI machine: {machine_info}")
-        active_log_filename = None
-        if job_manager.logging_provider and hasattr(
-            job_manager.logging_provider, "get_current_log_filename"
-        ):
-            try:
-                active_log_filename = job_manager.logging_provider.get_current_log_filename()
-            except Exception:
-                active_log_filename = None
+        current_log_file = get_current_log_file()
+        active_log_filename = current_log_file.name if current_log_file else None
 
         job_id = job_manager.create_job(
             user_id="cli_user",
@@ -586,7 +532,9 @@ def main(argv=None):
     args = parse_arguments(argv)
     config_path, log_level = args.config, args.log_level
 
-    config, logging_provider, app_log_path = initialize_cli_components(config_path, log_level)
+    config, _, app_log_path = initialize_cli_components(
+        config_path, log_level, os_log=getattr(args, "log_os_log", False)
+    )
 
     # Apply CLI argument overrides to config if provided
     if hasattr(args, "type") and args.type:
@@ -599,11 +547,10 @@ def main(argv=None):
             config._cli_override = {}
         config._cli_override["file"] = args.file
 
-    # Get logger from the initialized logging provider
-    logger = logging_provider.get_logger(__name__)
-    logger.info(f"CLI initialization complete. Logging to: {app_log_path}")
+    logger = logging.getLogger(__name__)
+    logger.info(f"CLI initialization complete. Logging to: {app_log_path or 'console only'}")
 
-    return run_cli(config, logging_provider)
+    return run_cli(config)
 
 
 if __name__ == "__main__":

@@ -9,12 +9,12 @@ Use case: A client manually enters member Names into the external_id field
 in NationBuilder, allowing donations without email to be matched.
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/paypal/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/paypal/)
 2. Enable plugins in your config:
    plugins:
      paypal:
        enabled: true
-       dir: "~/.config/cdflow/plugins/paypal"
+       dir: "~/.config/caestudy/plugins/paypal"
 3. Run your import as normal
 
 Note: This plugin requires that your NationBuilder records have Names

@@ -18,9 +18,8 @@ from pathlib import Path
 
 from ..utils.config import ConfigProvider
 from ..utils.file_utils import safe_read_text_file
-from ..utils.logging import LoggingProvider
+from ..utils.logging import get_current_log_file
 from ..utils.paths import get_paths
-from .extractor import ImportLogExtractor
 from ..services.import_service import DonationImportService
 from .models import JobArtifact, JobStatus, JobResult
 
@@ -42,13 +41,14 @@ class JobManager:
     donation import jobs running in the background.
     """
 
-    def __init__(self, config_provider: ConfigProvider, logging_provider: LoggingProvider):
+    def __init__(self, config_provider: ConfigProvider, logging_provider=None):
         """
         Initialize the job manager.
 
         Args:
             config_provider: Configuration provider
-            logging_provider: Logging provider
+            logging_provider: Deprecated, ignored; logging is configured
+                process-wide by configure_logging()
         """
         self.config_provider = config_provider
         self.logging_provider = logging_provider
@@ -63,13 +63,6 @@ class JobManager:
         self.job_thread = None
         self.active = False
         self._job_lock = threading.RLock()  # Thread safety for job status updates
-
-        # Initialize log extractor for import log separation
-        try:
-            self.log_extractor = ImportLogExtractor(config_provider, logging_provider)
-        except Exception as e:
-            logger.warning(f"Failed to initialize log extractor: {str(e)}")
-            self.log_extractor = None
 
         logger.debug("JobManager initialized")
 
@@ -276,10 +269,17 @@ class JobManager:
                     # Get output file paths
                     # We'd need to modify DonationImportService to return these
                     output_dir = Path(".")
-                    log_filename, success_filename, fail_filename = (
+                    _, success_filename, fail_filename = (
                         import_service.get_output_filenames(
                             input_filename=file_path, output_dir=output_dir
                         )
+                    )
+
+                    # Per-import log files are no longer produced; reference
+                    # the job's active application log instead
+                    current_log_file = get_current_log_file()
+                    log_filename = job.get("api_log_filename") or (
+                        current_log_file.name if current_log_file else None
                     )
 
                     # Create result using the CSV total count for consistency
@@ -317,16 +317,6 @@ class JobManager:
                     logger.info(
                         f"Job {job['job_id']} completed with {success_count} successes and {fail_count} failures"
                     )
-
-                    # Extract import-specific logs after job completion
-                    # Get updated job record with processing_started_at field
-                    updated_job = self.get_job_status(job["job_id"])
-                    if updated_job:
-                        self._extract_import_logs_for_job(updated_job)
-                    else:
-                        logger.warning(
-                            f"Could not retrieve updated job record for {job['job_id']}, skipping log extraction"
-                        )
 
                 except Exception as e:
                     logger.error(f"Error processing job {job['job_id']}: {str(e)}")
@@ -700,80 +690,3 @@ class JobManager:
             logger.error(f"Error saving job {job['job_id']} to file: {str(e)}")
             raise  # Re-raise to trigger rollback in _update_job_status
 
-    def _extract_import_logs_for_job(self, job: Dict[str, Any]) -> None:
-        """
-        Extract import-specific logs for a completed job.
-
-        Args:
-            job: Job record containing job details
-        """
-        if not self.log_extractor:
-            logger.debug(
-                f"Log extractor not available, skipping extraction for job {job['job_id']}"
-            )
-            return
-
-        try:
-            # Calculate end time (current time since job just completed)
-            end_time = datetime.now().isoformat()
-
-            # Extract original filename from file_id if available
-            original_filename = None
-            if "file_id" in job:
-                # file_id format: "{uuid}_{original_filename}" or "{uuid}_cli_{original_filename}"
-                parts = job["file_id"].split("_")
-                if len(parts) >= 3 and parts[1] == "cli":
-                    # CLI job: skip the cli part and join the rest
-                    original_filename = "_".join(parts[2:])
-                elif len(parts) > 1:
-                    # API job: everything after the first underscore
-                    original_filename = "_".join(parts[1:])
-
-            # Use processing_started_at if available, otherwise fall back to created_at
-            start_time = job.get("processing_started_at", job["created_at"])
-
-            if "processing_started_at" in job:
-                logger.debug(f"Using processing start time for log extraction: {start_time}")
-            else:
-                logger.debug(
-                    f"Using creation time for log extraction (processing_started_at not available): {start_time}"
-                )
-
-            # Extract import logs using actual processing start time
-            import_log_path = self.log_extractor.extract_import_log(
-                job_id=job["job_id"],
-                start_time=start_time,
-                end_time=end_time,
-                original_filename=original_filename,
-                api_log_filename=job.get("api_log_filename"),
-            )
-
-            # Update job result with the actual import log path
-            if "result" in job and job["result"]:
-                # Update the log_file in the result to point to extracted log
-                with self._job_lock:
-                    job["result"]["log_file"] = import_log_path
-                    result_artifacts = job["result"].get("artifacts")
-                    if not isinstance(result_artifacts, dict):
-                        result_artifacts = {}
-                        job["result"]["artifacts"] = result_artifacts
-                    result_artifacts["log"] = self._build_artifact(
-                        import_log_path, "logs", "import_log"
-                    )
-                    self._set_job_artifact(job, "log", import_log_path, "logs", "import_log")
-                    job["updated_at"] = datetime.now().isoformat()
-
-                    # Save updated job record
-                    self._save_job_to_file(job)
-
-                    # Update in-memory store
-                    jobs_store[job["job_id"]] = job
-
-            logger.debug(
-                f"Successfully extracted import log for job {job['job_id']}: {import_log_path}"
-            )
-
-        except Exception as e:
-            # Log extraction failure should not fail the job
-            logger.warning(f"Failed to extract import log for job {job['job_id']}: {str(e)}")
-            # Continue without failing the job - extraction is supplementary

@@ -6,13 +6,13 @@ When a donor's email is marked as "ANON" in the CSV, this plugin converts it
 to a configurable email address.
 
 To customize the anonymous email address:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/canadahelps/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/canadahelps/)
 2. Edit the ANONYMOUS_EMAIL constant below
 3. Enable plugins in your config:
    plugins:
      canadahelps:
        enabled: true
-       dir: "~/.config/cdflow/plugins/canadahelps"
+       dir: "~/.config/caestudy/plugins/canadahelps"
 """
 
 from cdflow_cli.plugins.registry import register_plugin

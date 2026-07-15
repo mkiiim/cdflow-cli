@@ -8,12 +8,12 @@ Note: If you're using the 10_anonymous_email.py plugin, this plugin will
 handle address and name fields while that one handles email. They work together.
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/canadahelps/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/canadahelps/)
 2. Enable plugins in your config:
    plugins:
      canadahelps:
        enabled: true
-       dir: "~/.config/cdflow/plugins/canadahelps"
+       dir: "~/.config/caestudy/plugins/canadahelps"
 3. Run your import as normal
 """
 

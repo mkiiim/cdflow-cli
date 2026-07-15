@@ -595,7 +595,7 @@ def main(argv=None):
     )
 
     parser.add_argument(
-        "--config-dir", help="Directory to create configuration files (default: ~/.config/cdflow/)"
+        "--config-dir", help="Directory to create configuration files (default: ~/.config/caestudy/)"
     )
 
     parser.add_argument(

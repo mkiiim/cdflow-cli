@@ -8,13 +8,13 @@ This example shows a common pattern: separate tracking codes for monthly
 vs one-time donations based on the MONTHLY GIFT ID field.
 
 Usage:
-1. Copy this file to your plugins directory (e.g., ~/.config/cdflow/plugins/canadahelps/)
+1. Copy this file to your plugins directory (e.g., ~/.config/caestudy/plugins/canadahelps/)
 2. Customize the tracking codes to match your NationBuilder setup
 3. Enable plugins in your config:
    plugins:
      canadahelps:
        enabled: true
-       dir: "~/.config/cdflow/plugins/canadahelps"
+       dir: "~/.config/caestudy/plugins/canadahelps"
 4. Run your import as normal
 
 Customization:

@@ -10,6 +10,5 @@ for both CLI and web application contexts.
 
 from .manager import JobManager
 from .models import JobStatus, JobResult, JobArtifact
-from .extractor import ImportLogExtractor
 
-__all__ = ["JobManager", "JobStatus", "JobResult", "JobArtifact", "ImportLogExtractor"]
+__all__ = ["JobManager", "JobStatus", "JobResult", "JobArtifact"]

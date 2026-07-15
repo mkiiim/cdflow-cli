@@ -77,7 +77,7 @@ For development installation, please see the [Contribution Guide](docs/contribut
 
 1.  **Initialize configuration:** Run `cdflow init` to create template files:
 
-    - `~/.config/cdflow/local.yaml` - Main configuration file (default location)
+    - `~/.config/caestudy/local.yaml` - Main configuration file (default location)
     - `~/.env/nb_local.env` - OAuth environment variables template (non-configurable location)
 
     <br>

@@ -35,27 +35,27 @@ cdflow init
 ```
 
 This creates:
-- `~/.config/cdflow/plugins/canadahelps/` - CanadaHelps plugin examples
-- `~/.config/cdflow/plugins/paypal/` - PayPal plugin examples
+- `~/.config/caestudy/plugins/canadahelps/` - CanadaHelps plugin examples
+- `~/.config/caestudy/plugins/paypal/` - PayPal plugin examples
 
 All plugin files start with `_` prefix (disabled by default). To enable a plugin, remove the `_` prefix:
 
 ```bash
 # Example: Enable the eligibility filter plugin
-cd ~/.config/cdflow/plugins/canadahelps/
+cd ~/.config/caestudy/plugins/canadahelps/
 mv _99_eligibility_filter.py 99_eligibility_filter.py
 ```
 
-Then configure plugins in your `~/.config/cdflow/local.yaml`:
+Then configure plugins in your `~/.config/caestudy/local.yaml`:
 
 ```yaml
 plugins:
   canadahelps:
     enabled: true
-    dir: "~/.config/cdflow/plugins/canadahelps"
+    dir: "~/.config/caestudy/plugins/canadahelps"
   paypal:
     enabled: true
-    dir: "~/.config/cdflow/plugins/paypal"
+    dir: "~/.config/caestudy/plugins/paypal"
 ```
 
 ## Available Examples

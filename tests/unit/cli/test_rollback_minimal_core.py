@@ -51,14 +51,14 @@ def test_rollback_with_minimal_mocking():
     mock_config.get_import_setting.return_value = None  # Force default CanadaHelps
     mock_config.get_oauth_config.return_value = None  # Should cause early failure
     
-    mock_logging_provider = Mock()
+    mock_logging_provider = None
     mock_logger = Mock()
-    mock_logging_provider.get_logger.return_value = mock_logger
-    
+
     # This should fail early due to OAuth config being None, but still test what we can
     with patch('cdflow_cli.utils.menu.clear_screen'), \
-         patch('cdflow_cli.utils.paths.initialize_paths', return_value=None):  # Force early failure
-        
+         patch('cdflow_cli.utils.paths.initialize_paths', return_value=None), \
+         patch('cdflow_cli.cli.commands_rollback.logging.getLogger', return_value=mock_logger):  # Force early failure
+
         result = run_rollback_cli(mock_config, mock_logging_provider)
         
         # Should return 1 due to paths initialization failure (line 249)
@@ -72,14 +72,14 @@ def test_core_processing_with_exception_handling():
     """Test the exception handling at the top level (lines 392-398)."""
     
     mock_config = Mock()
-    mock_logging_provider = Mock()
+    mock_logging_provider = None
     mock_logger = Mock()
-    mock_logging_provider.get_logger.return_value = mock_logger
-    
+
     # Force an exception deeper in the code to trigger the top-level exception handler
     with patch('cdflow_cli.utils.menu.clear_screen'), \
-         patch('cdflow_cli.utils.paths.initialize_paths', side_effect=Exception("Forced test exception")):
-        
+         patch('cdflow_cli.utils.paths.initialize_paths', side_effect=Exception("Forced test exception")), \
+         patch('cdflow_cli.cli.commands_rollback.logging.getLogger', return_value=mock_logger):
+
         result = run_rollback_cli(mock_config, mock_logging_provider)
         
         # Should return 1 due to exception (line 398)

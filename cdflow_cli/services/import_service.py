@@ -21,7 +21,6 @@ from ..nationbuilder_auth_core.token_provider import NationBuilderTokenProvider
 from ..nationbuilder_auth_core.token_state import InMemoryTokenState
 from ..services.auth_service import create_cli_auth_service
 from ..utils.config import ConfigProvider
-from ..utils.logging import LoggingProvider, get_logging_provider
 from ..utils.paths import get_paths
 from ..utils.file_cleanup import clean_csv_content_with_uneff
 from ..utils.file_utils import safe_read_text_file
@@ -36,7 +35,7 @@ class DonationImportService:
         self,
         config_path: str = None,
         config_provider: ConfigProvider = None,
-        logging_provider: LoggingProvider = None,
+        logging_provider=None,
         job_context: Dict[str, Any] = None,
     ):
         """
@@ -45,7 +44,8 @@ class DonationImportService:
         Args:
             config_path (str, optional): Path to configuration file
             config_provider (ConfigProvider, optional): Existing ConfigProvider instance
-            logging_provider (LoggingProvider, optional): Existing LoggingProvider instance
+            logging_provider (optional): Deprecated, ignored; logging is
+                configured process-wide by configure_logging()
             job_context (Dict[str, Any], optional): Job context containing job_id and machine_info for tracking
         """
         # Initialize with either a provided ConfigProvider or create a new one
@@ -77,41 +77,9 @@ class DonationImportService:
             self.paths = initialize_paths(self.config)
             logger.debug("Initialized paths system for import operations")
 
-        # Use the provided logging provider or initialize a new one
+        # Retained for backwards compatibility with callers that still pass
+        # a provider; logging is configured process-wide by configure_logging()
         self.logging_provider = logging_provider
-        if not self.logging_provider:
-            logging_config = self.config.get_logging_config()
-            if not logging_config:
-                logging_config = {
-                    "provider": "file",
-                    "settings": {"directory": "./logs", "level": "DEBUG", "console_level": "INFO"},
-                }
-            self.logging_provider = get_logging_provider(logging_config)
-
-        # Configure logging level if specified in runtime settings
-        # Get log level from new logging config structure
-        logging_config = self.config.get_logging_config()
-        file_level = logging_config.get("file_level", "DEBUG") if logging_config else "DEBUG"
-        log_level = file_level if file_level != "NONE" else "DEBUG"
-        if log_level:
-            self._configure_log_level(log_level)
-
-    def _configure_log_level(self, log_level: str):
-        """
-        Configure logging level based on runtime setting.
-
-        Args:
-            log_level (str): Log level name (DEBUG, INFO, etc.)
-        """
-        # Only set the log level, don't reconfigure the entire logging system
-        # to avoid clearing existing handlers (e.g., API handlers)
-        try:
-            log_level_enum = getattr(logging, log_level.upper(), logging.DEBUG)
-            logging.getLogger().setLevel(log_level_enum)
-            logger.debug(f"Set log level to {log_level}")
-        except AttributeError:
-            logger.warning(f"Invalid log level: {log_level}, using DEBUG")
-            logging.getLogger().setLevel(logging.DEBUG)
 
     def _build_token_provider_from_payload(
         self, oauth_config: Dict[str, Any], oauth_tokens: Dict[str, Any]
@@ -996,10 +964,7 @@ class DonationImportService:
         Returns:
             Tuple containing count of successful and failed imports
         """
-        # Get logger that respects CLI console log level
-        processing_logger = (
-            self.logging_provider.get_logger(__name__) if self.logging_provider else logger
-        )
+        processing_logger = logger
 
         try:
             prepared_import = self._prepare_import_rows(
@@ -1199,30 +1164,15 @@ class DonationImportService:
             input_filename, output_dir
         )
 
-        # Get logger for import processing
-        import_logger = (
-            self.logging_provider.get_logger(__name__)
-            if self.logging_provider
-            else logging.getLogger(__name__)
-        )
+        import_logger = logger
 
-        # Use existing log file if provided, otherwise use normal logging
+        # Per-import log files are no longer produced; all output goes to the
+        # process-wide logging configured at startup
         if existing_log_filename:
             log_filename = existing_log_filename
-            # Configure logging with the provided log filename
-            if self.logging_provider:
-                # Get log level from configuration
-                logging_config = self.config.get_logging_config()
-                file_level = (
-                    logging_config.get("file_level", "DEBUG") if logging_config else "DEBUG"
-                )
-                log_level = file_level if file_level != "NONE" else "DEBUG"
-
-                self.logging_provider.configure_logging(
-                    log_filename=log_filename, log_level=log_level or "DEBUG"
-                )
-
-            import_logger.debug(f"Configured logging with existing log file: {log_filename}")
+            import_logger.debug(
+                f"existing_log_filename is deprecated and ignored: {log_filename}"
+            )
 
         # Process donations - all logs will go to unified APP log and be extracted later
         success_count = 0

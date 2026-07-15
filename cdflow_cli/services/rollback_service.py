@@ -17,7 +17,6 @@ from ..adapters.canadahelps import CHDonationMapper
 from ..adapters.paypal import PPDonationMapper
 from ..services.auth_service import create_cli_auth_service
 from ..utils.config import ConfigProvider
-from ..utils.logging import LoggingProvider
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +24,18 @@ logger = logging.getLogger(__name__)
 class DonationRollbackService:
     """Service for rolling back (deleting) previously imported donations."""
 
-    def __init__(self, config_provider: ConfigProvider, logging_provider: LoggingProvider):
+    def __init__(self, config_provider: ConfigProvider, logging_provider=None):
         """
         Initialize the rollback service.
 
         Args:
             config_provider: Configuration provider
-            logging_provider: Logging provider
+            logging_provider: Deprecated, ignored; logging is configured
+                process-wide by configure_logging()
         """
         self.config_provider = config_provider
         self.logging_provider = logging_provider
-        self.logger = logging_provider.get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
 
         # API client instances (initialized later)
         self.nboauth = None

@@ -337,16 +337,13 @@ def run_rollback_cli(
 
     Args:
         config: ConfigProvider instance (from bootstrap)
-        logging_provider: Logging provider instance (from bootstrap)
+        logging_provider: Deprecated, ignored; logging is configured
+            process-wide by configure_logging() during bootstrap
 
     Returns:
         int: Exit status code (0 for success, non-zero for errors)
     """
-    # Get logger from the bootstrap logging provider
-    if logging_provider:
-        logger = logging_provider.get_logger(__name__)
-    else:
-        logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     try:
         # Display startup message with formatting
@@ -503,11 +500,7 @@ def run_rollback_cli(
         return 0
 
     except Exception as e:
-        if logging_provider:
-            logger = logging_provider.get_logger(__name__)
-            logger.error(f"Unhandled exception in rollback CLI: {str(e)}", exc_info=True)
-        else:
-            print(f"Unhandled exception: {str(e)}")
+        logger.error(f"Unhandled exception in rollback CLI: {str(e)}", exc_info=True)
         return 1
 
 
@@ -538,6 +531,11 @@ def main(argv=None):
         action="store_true",
         help="Skip interactive confirmation prompt once inputs are resolved",
     )
+    parser.add_argument(
+        "--log-os-log",
+        action="store_true",
+        help="Also send logs to macOS unified logging (Console.app)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -545,6 +543,7 @@ def main(argv=None):
             args.config,
             args.log_level,
             require_existing_config=True,
+            os_log=getattr(args, "log_os_log", False),
         )
     except FileNotFoundError as exc:
         print(f"Configuration file not found: {exc}")
