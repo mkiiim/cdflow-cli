@@ -36,7 +36,7 @@ def uppercase_names(row_data: dict) -> dict:
         (plugins_dir / "uppercase.py").write_text(plugin_code)
 
         # Load plugin
-        count = load_plugins("canadahelps", plugins_dir)
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["uppercase"])
         assert count == 1
 
         # Create donation data with plugin active
@@ -85,7 +85,7 @@ def set_defaults(row_data: dict) -> dict:
         (plugins_dir / "01_sanitize.py").write_text(plugin1)
         (plugins_dir / "02_defaults.py").write_text(plugin2)
 
-        count = load_plugins("canadahelps", plugins_dir)
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["01_sanitize", "02_defaults"])
         assert count == 2
 
         # Test data with ANON email
@@ -119,7 +119,7 @@ def broken_plugin(row_data: dict) -> dict:
 '''
         (plugins_dir / "bad.py").write_text(bad_plugin)
 
-        count = load_plugins("canadahelps", plugins_dir)
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["bad"])
         assert count == 1
 
         test_row = {
@@ -158,7 +158,7 @@ def add_prefix_to_names(row_data: dict) -> dict:
 '''
         (plugins_dir / "prefix.py").write_text(plugin_code)
 
-        count = load_plugins("canadahelps", plugins_dir)
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["prefix"])
         assert count == 1
 
         test_row = {

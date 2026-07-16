@@ -38,12 +38,13 @@ This creates:
 - `~/.config/caestudy/plugins/canadahelps/` - CanadaHelps plugin examples
 - `~/.config/caestudy/plugins/paypal/` - PayPal plugin examples
 
-All plugin files start with `_` prefix (disabled by default). To enable a plugin, remove the `_` prefix:
+Which plugins run is controlled by a `plugins.yaml` whitelist alongside the plugin files. Only files whose stem appears in the `enabled` list load; a `_` filename prefix has no loader meaning (it marks reference/template copies by convention). Without `plugins.yaml`, no plugins load:
 
-```bash
-# Example: Enable the eligibility filter plugin
-cd ~/.config/caestudy/plugins/canadahelps/
-mv _99_eligibility_filter.py 99_eligibility_filter.py
+```yaml
+# ~/.config/caestudy/plugins/canadahelps/plugins.yaml
+enabled:
+  - _00_check_number_formatter
+  - _99_eligibility_filter
 ```
 
 Then configure plugins in your `~/.config/caestudy/local.yaml`:

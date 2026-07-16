@@ -94,7 +94,7 @@ def external_id_fallback(donation, people_client, default_lookup):
         (plugins_dir / "external_id.py").write_text(plugin_code)
 
         # Load the plugin
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["external_id"])
 
         # Get the registered plugin
         plugins = get_plugins("paypal", "person_lookup")
@@ -160,7 +160,7 @@ def external_id_fallback(donation, people_client, default_lookup):
     return person_id, success, message
 '''
         (plugins_dir / "external_id.py").write_text(plugin_code)
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["external_id"])
 
         plugins = get_plugins("paypal", "person_lookup")
         plugin_name, plugin_func = plugins[0]

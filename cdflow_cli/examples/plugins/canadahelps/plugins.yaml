@@ -1,0 +1,16 @@
+# Plugin whitelist for the canadahelps adapter.
+#
+# Only plugin files whose stem (filename without .py) appears in the
+# 'enabled' list are loaded. A leading underscore in a filename has no
+# loader meaning - it is a human convention for reference copies, and a
+# whitelisted "_name" entry loads _name.py as-is. List order does not
+# control load order; matching files load alphabetically.
+#
+# Without this file present in the plugin directory, no plugins load.
+enabled:
+  - _00_check_number_formatter
+  - _10_anonymous_email
+  - _20_tracking_code_mapper
+  - _30_payment_type_mapper
+  - _40_sanitize_anon_fields
+  - _99_eligibility_filter
