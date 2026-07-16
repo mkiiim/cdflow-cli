@@ -72,7 +72,8 @@ include = ["cdflow_cli*"]
     "assets/static/*.png",
     "scripts/*.sh",
     "examples/plugins/**/*.py",
-    "examples/plugins/**/*.md"
+    "examples/plugins/**/*.md",
+    "examples/plugins/**/*.yaml"
 ]
 
 [tool.pytest.ini_options]

@@ -118,7 +118,7 @@ def custom_anon_email(row_data: dict) -> dict:
         (plugins_dir / "anon.py").write_text(plugin_code)
 
         # Load plugin
-        count = load_plugins("canadahelps", plugins_dir)
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["anon"])
         assert count == 1
 
         # Create donation with plugin active
@@ -300,7 +300,7 @@ def set_check_number(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "check_number.py").write_text(plugin_code)
-        load_plugins("canadahelps", plugins_dir)
+        load_plugins("canadahelps", plugins_dir, enabled_names=["check_number"])
 
         donation = CHDonationMapper(valid_ch_row)
         assert donation.NBcheck_number == "CH_CH-123456"
@@ -328,7 +328,7 @@ def set_payment_type(row_data: dict) -> dict:
         (plugins_dir / "payment_type.py").write_text(plugin_code)
 
         valid_ch_row['PAYMENT METHOD'] = 'Credit Card'
-        load_plugins("canadahelps", plugins_dir)
+        load_plugins("canadahelps", plugins_dir, enabled_names=["payment_type"])
 
         donation = CHDonationMapper(valid_ch_row)
         assert donation.NBpayment_type_name == "Credit Card"
@@ -353,7 +353,7 @@ def set_tracking_code(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "tracking.py").write_text(plugin_code)
-        load_plugins("canadahelps", plugins_dir)
+        load_plugins("canadahelps", plugins_dir, enabled_names=["tracking"])
 
         donation = CHDonationMapper(valid_ch_row)
         assert donation.NBtracking_code_slug == "donation_canadahelps"

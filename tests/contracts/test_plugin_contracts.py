@@ -11,16 +11,16 @@ class TestPluginContracts:
     def teardown_method(self):
         clear_registry()
 
-    def test_loader_skips_disabled_files_and_preserves_alphabetical_order(self, tmp_path):
+    def test_loader_honours_whitelist_and_preserves_alphabetical_order(self, tmp_path):
         plugins_dir = tmp_path / "plugins"
         plugins_dir.mkdir()
 
-        (plugins_dir / "_disabled.py").write_text(
+        (plugins_dir / "_reference.py").write_text(
             """
 from cdflow_cli.plugins.registry import register_plugin
 
 @register_plugin("canadahelps", "row_transformer")
-def disabled_plugin(row_data):
+def reference_plugin(row_data):
     return row_data
 """
         )
@@ -42,12 +42,55 @@ def plugin_a(row_data):
     return row_data
 """
         )
+        (plugins_dir / "plugins.yaml").write_text(
+            "enabled:\n  - z_last\n  - a_first\n"
+        )
 
         count = load_plugins("canadahelps", plugins_dir)
         plugins = get_plugins("canadahelps", "row_transformer")
 
         assert count == 2
         assert [name for name, _func in plugins] == ["plugin_a", "plugin_z"]
+
+    def test_loader_loads_nothing_without_whitelist(self, tmp_path, caplog):
+        plugins_dir = tmp_path / "plugins"
+        plugins_dir.mkdir()
+
+        (plugins_dir / "unlisted.py").write_text(
+            """
+from cdflow_cli.plugins.registry import register_plugin
+
+@register_plugin("canadahelps", "row_transformer")
+def unlisted_plugin(row_data):
+    return row_data
+"""
+        )
+
+        count = load_plugins("canadahelps", plugins_dir)
+
+        assert count == 0
+        assert get_plugins("canadahelps") == []
+        assert "Plugin whitelist not found" in caplog.text
+
+    def test_loader_ignores_underscore_prefix_when_whitelisted(self, tmp_path):
+        plugins_dir = tmp_path / "plugins"
+        plugins_dir.mkdir()
+
+        (plugins_dir / "_reference.py").write_text(
+            """
+from cdflow_cli.plugins.registry import register_plugin
+
+@register_plugin("canadahelps", "row_transformer")
+def reference_plugin(row_data):
+    return row_data
+"""
+        )
+
+        count = load_plugins("canadahelps", plugins_dir, enabled_names=["_reference"])
+        plugins = get_plugins("canadahelps", "row_transformer")
+
+        assert count == 1
+        assert [name for name, _func in plugins] == ["reference_plugin"]
 
     def test_person_lookup_plugin_receives_default_lookup_contract(self):
         observed = {}

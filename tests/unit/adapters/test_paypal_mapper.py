@@ -235,7 +235,7 @@ def set_check_number(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "check_number.py").write_text(plugin_code)
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["check_number"])
 
         donation = PPDonationMapper(valid_paypal_row)
         assert donation.NBcheck_number == "PP_PP-123456"
@@ -379,7 +379,7 @@ def filter_custom_number(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "filter.py").write_text(plugin_code)
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["filter"])
 
         # Test with Custom Number (should be filtered)
         valid_paypal_row['Custom Number'] = 'DUPLICATE-123'
@@ -424,7 +424,7 @@ def map_tracking(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "tracking.py").write_text(plugin_code)
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["tracking"])
 
         # Test monthly
         monthly_row = valid_paypal_row.copy()
@@ -462,7 +462,7 @@ def map_payment_type(row_data: dict) -> dict:
     return row_data
 '''
         (plugins_dir / "payment.py").write_text(plugin_code)
-        load_plugins("paypal", plugins_dir)
+        load_plugins("paypal", plugins_dir, enabled_names=["payment"])
 
         # Test subscription
         valid_paypal_row['Type'] = 'Subscription Payment'

@@ -40,13 +40,21 @@ This creates:
 - `~/.config/caestudy/plugins/canadahelps/` - CanadaHelps plugin examples
 - `~/.config/caestudy/plugins/paypal/` - PayPal plugin examples
 
-All plugin files start with `_` prefix (disabled by default). To enable a plugin, remove the `_` prefix:
+Which plugins run is controlled by an explicit whitelist file, `plugins.yaml`, that lives alongside the plugin `.py` files in each adapter directory. Only files whose stem (filename without `.py`) appears in the `enabled` list are loaded. A leading `_` in a filename has no loader meaning — it is purely a human convention for marking reference/template copies:
 
-```bash
-# Example: Enable the eligibility filter plugin
-cd ~/.config/caestudy/plugins/canadahelps/
-mv _99_eligibility_filter.py 99_eligibility_filter.py
+```yaml
+# ~/.config/caestudy/plugins/canadahelps/plugins.yaml
+enabled:
+  - _00_check_number_formatter
+  - _99_eligibility_filter
 ```
+
+Whitelist rules:
+
+- Names are file stems as-is (no `.py` extension) — a `_`-prefixed file is whitelisted with its `_`-prefixed stem
+- List order does not control execution order; matching files load alphabetically
+- A whitelisted name with no matching file logs a warning and is skipped
+- **If `plugins.yaml` is absent or invalid, no plugins load and an error is logged** — there is no fallback to any filename convention
 
 Then configure plugins in your `~/.config/caestudy/local.yaml`:
 
@@ -152,8 +160,22 @@ def my_validator(donation: DonationMapper) -> DonationMapper:
 
 - Plugins execute in **alphabetical order** by filename
 - Use numeric prefixes (`00_`, `10_`, `20_`, etc.) to control execution order
-- Disable plugins by prefixing filename with underscore (e.g., `_99_eligibility_filter.py`)
-- Example plugins from `cdflow init` start disabled with `_` prefix - remove `_` to enable
+- Enable/disable plugins by editing the `enabled` list in `plugins.yaml` — filenames carry no enabled/disabled meaning
+- A `_` filename prefix is a human convention for reference/template copies; the loader ignores it entirely
+
+### Migrating from the `_` prefix convention
+
+Earlier versions disabled plugins by prefixing the filename with `_`. That convention no longer has any loader behaviour: the whitelist file is the sole authority, and without one no plugins load.
+
+**Before upgrading an existing deployment**, add `plugins.yaml` to `~/.config/caestudy/plugins/canadahelps/` and `~/.config/caestudy/plugins/paypal/` listing the file stems you want to load. For example, if `00_check_number_formatter.py` and `99_eligibility_filter.py` were previously active (un-prefixed):
+
+```yaml
+enabled:
+  - 00_check_number_formatter
+  - 99_eligibility_filter
+```
+
+Previously `_`-prefixed (disabled) files can stay in the directory as reference copies — simply leave them out of the list, or add them with their `_`-prefixed stem to activate them without renaming.
 
 ### Recommended Ordering Convention
 
