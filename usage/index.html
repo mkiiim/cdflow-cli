@@ -1,0 +1,1490 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Usage Guide - cdflow CLI Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../css/typography.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#usage" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="cdflow CLI Docs" class="md-header__button md-logo" aria-label="cdflow CLI Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            cdflow CLI Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Usage Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="cdflow CLI Docs" class="md-nav__button md-logo" aria-label="cdflow CLI Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    cdflow CLI Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage & Config
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage & Config
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-configuration-cdflow-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up Configuration (cdflow init)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting Up Configuration (cdflow init)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-env-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About .env files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-conflict-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Conflict Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-oauth-credentials-and-callback-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up OAuth Credentials And Callback Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting Up OAuth Credentials And Callback Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#locate-the-load-secretssh-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locate the load-secrets.sh script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-the-script-using-your-env-file-as-the-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execute the script using your .env file as the parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#importing-donations-cdflow-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing Donations (cdflow import)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Importing Donations (cdflow import)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-level-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Level Control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-unified-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS Unified Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rolling-back-donations-cdflow-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling Back Donations (cdflow rollback)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rolling Back Donations (cdflow rollback)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storage Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-configuration-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Configuration (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#centralized-storage-with-base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Centralized Storage with Base Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mixed-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mixed Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benefits-of-base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benefits of Base Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_formats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Plugins
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-configuration-cdflow-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up Configuration (cdflow init)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting Up Configuration (cdflow init)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-env-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About .env files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-conflict-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Conflict Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-oauth-credentials-and-callback-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up OAuth Credentials And Callback Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting Up OAuth Credentials And Callback Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#locate-the-load-secretssh-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locate the load-secrets.sh script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-the-script-using-your-env-file-as-the-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execute the script using your .env file as the parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#importing-donations-cdflow-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing Donations (cdflow import)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Importing Donations (cdflow import)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-level-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Level Control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-unified-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS Unified Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rolling-back-donations-cdflow-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling Back Donations (cdflow rollback)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rolling Back Donations (cdflow rollback)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storage Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-configuration-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Configuration (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#centralized-storage-with-base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Centralized Storage with Base Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mixed-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mixed Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benefits-of-base-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benefits of Base Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<div class="df-hero__eyebrow">cdflow-cli docs · usage.md</div>
+
+<h1 id="usage">Usage</h1>
+<p>This guide provides detailed instructions for using the <code>cdflow init</code>, <code>cdflow import</code> and <code>cdflow rollback</code> commands.</p>
+<h2 id="setting-up-configuration-cdflow-init">Setting Up Configuration (<code>cdflow init</code>)</h2>
+<p>Before using <code>cdflow</code>, you need to set up a YAML config file and the environment variables required for NationBuilder authentication. The <code>cdflow init</code> command creates starter templates for both.</p>
+<p>The default location for configuration <code>.yaml</code> files is <code>~/.config/caestudy/</code>. The location of config files is configurable.
+The default location for OAuth <code>.env</code> files is <code>~/.env/</code>. The location of environment files is not configurable.</p>
+<h3 id="about-env-files">About <code>.env</code> files</h3>
+<p>A <code>.env</code> file is provided as a reference and template for the environment variables required for <code>cdflow</code> to authenticate and connect to your NationBuilder instance.</p>
+<p>In a development scenario a <code>.env</code> file can be used to quickly and easily <code>source</code> the set of environment variables for a specific environment. Multiple <code>.env</code> files can be created, one for each unique environment, and can facilitate easy switching between environments.</p>
+<p>In a production environment, as a security and privacy best practice, it is best to not store these secrets in plain text files and to instead use your system's secrets management and procedures to create the environment variables in the session(s) in which <code>cdflow</code> is needed.</p>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>init
+<span class="c1"># creates config templates in default location (~/.config/caestudy/)</span>
+<span class="c1"># creates OAuth .env files in non-configurable location (~/.env/)</span>
+
+cdflow<span class="w"> </span>init<span class="w"> </span>--config-dir<span class="w"> </span>/path/to/config
+<span class="c1"># creates config templates in the specified location (/path/to/config)</span>
+<span class="c1"># creates OAuth .env files in non-configurable location (~/.env/)</span>
+</code></pre></div>
+<p>This creates:<br />
+- <code>~/.config/caestudy/local.yaml</code> - Main application configuration file (default location)<br />
+- <code>~/.env/nb_local.env</code> - OAuth environment variables template (non-configurable location)</p>
+<h3 id="options">Options</h3>
+<ul>
+<li><code>--config-dir</code>: Directory to specify the location to write configuration template file (default: <code>~/.config/caestudy/</code>)</li>
+<li><code>--force</code>: Overwrite existing files with templates without prompting</li>
+</ul>
+<h3 id="file-conflict-handling">File Conflict Handling</h3>
+<p>If configuration and/or oauth files with the same filename(s) already exist, <code>cdflow init</code> will prompt you to choose:
+- <strong>Overwrite</strong>: Replace existing files with fresh templates
+- <strong>Skip</strong>: Create only missing files, keep existing ones unchanged
+- <strong>Cancel</strong>: Exit without making changes</p>
+<p>Use <code>--force</code> to automatically overwrite without prompting.</p>
+<h3 id="setting-up-oauth-credentials-and-callback-settings">Setting Up OAuth Credentials And Callback Settings</h3>
+<p>After running <code>cdflow init</code>, you need to configure your NationBuilder OAuth credentials:</p>
+<ol>
+<li>
+<p><strong>Edit the OAuth template:</strong>
+   <div class="highlight"><pre><span></span><code>nano<span class="w"> </span>~/.env/nb_local.env
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Add your credentials:</strong>
+   <div class="highlight"><pre><span></span><code><span class="nv">NB_CLIENT_ID</span><span class="o">=</span>your_actual_client_id
+<span class="nv">NB_CLIENT_SECRET</span><span class="o">=</span>your_actual_client_secret
+<span class="nv">NB_SLUG</span><span class="o">=</span>your_nation_slug
+<span class="nv">NB_CONFIG_NAME</span><span class="o">=</span>name_for_this_configuration_eg_development
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Set the shared callback contract in your YAML config:</strong></p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">nboauth</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">redirect_uri</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:8000/callback&quot;</span>
+<span class="w">  </span><span class="nt">callback</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">bind_host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;localhost&quot;</span>
+<span class="w">    </span><span class="nt">bind_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+</code></pre></div>
+<p>The important rule is:
+   - <code>redirect_uri</code> must exactly match the callback URL registered in NationBuilder
+   - <code>callback.bind_host</code> and <code>callback.bind_port</code> should be populated from the host/port in <code>redirect_uri</code></p>
+<p>Example:
+   - <code>http://localhost:8000/callback</code> -&gt; <code>bind_host=localhost</code>, <code>bind_port=8000</code></p>
+<p>These fields stay in the shared config shape used by both <code>cdflow-cli</code> and <code>ccflow-app</code>. In local CLI use, <code>cdflow-cli</code> actively uses <code>callback.bind_*</code> for its temporary callback listener.</p>
+<ol>
+<li>
+<p><strong>Source the environment using the provided <code>load-secrets.sh</code> shell script:</strong></p>
+<h4 id="locate-the-load-secretssh-script">Locate the <code>load-secrets.sh</code> script</h4>
+<p>If you are in the source repo:
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>./scripts/
+</code></pre></div>
+If you have installed via pip and have created your virtual environment:
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;path-to-venv-environment-directory&gt;/lib/python3.13/site-packages/cdflow_cli/scripts/
+</code></pre></div></p>
+<h4 id="execute-the-script-using-your-env-file-as-the-parameter">Execute the script using your <code>.env</code> file as the parameter</h4>
+<div class="highlight"><pre><span></span><code>./load-secrets.sh<span class="w"> </span>~/.env/nb_local.env
+</code></pre></div>
+</li>
+</ol>
+<h2 id="importing-donations-cdflow-import">Importing Donations (<code>cdflow import</code>)</h2>
+<p>This is the main command for importing donations into NationBuilder.</p>
+<h3 id="workflow">Workflow</h3>
+<ol>
+<li>
+<p><strong>Prepare your CSV file:</strong> Download your donation transaction report from CanadaHelps or PayPal. Ensure that the file is in the correct format (see <a href="../data_formats/">Data Formats</a> for details).</p>
+</li>
+<li>
+<p><strong>Place the CSV file:</strong> Move your CSV file into the appropriate subdirectory within the <code>cli_source</code> directory you defined in your configuration file. You can further organize your imports use <code>ch</code> for CanadaHelps files and <code>pp</code> for PayPal subdirectories to organize your imports by source system.</p>
+</li>
+<li>
+<p><strong>Configure the import:</strong> Open your configuration file (e.g., <code>local.yaml</code>) and update the <code>cli_import</code> section to specify the <code>type</code> (either <code>canadahelps</code> or <code>paypal</code>) and the <code>file</code> path (relative to <code>cli_source</code>).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">cli_import</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">canadahelps</span>
+<span class="w">  </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ch/your_donation_file.csv</span>
+</code></pre></div>
+</li>
+<li>
+<p><strong>Run the import command:</strong> Open your terminal and run the following command, replacing the path to your configuration file:</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+</code></pre></div>
+<p><strong>Alternative: Override import settings via CLI flags:</strong></p>
+<p>You can override the import type and file path from the config using CLI flags:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Override with relative path</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--type<span class="w"> </span>canadahelps<span class="w"> </span>--file<span class="w"> </span>donations/emergency.csv<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+<span class="c1"># Override with absolute path</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--type<span class="w"> </span>paypal<span class="w"> </span>--file<span class="w"> </span>/tmp/paypal_donations.csv<span class="w"> </span>--config<span class="w"> </span>/path/to/your/local.yaml
+</code></pre></div>
+<p><strong>Important:</strong> When using CLI flags, both <code>--type</code> and <code>--file</code> must be used together. The configuration file is still required for callback settings, storage paths, and the rest of the shared config.</p>
+<h3 id="log-level-control">Log Level Control</h3>
+<p>Control the verbosity of console output with the <code>--log-level</code> option:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Show only errors</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>ERROR
+
+<span class="c1"># Show important milestones and errors</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>NOTICE
+
+<span class="c1"># Show all information (default, recommended)</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>INFO
+
+<span class="c1"># Show everything including debug details</span>
+cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+</code></pre></div>
+<p><strong>Log Levels:</strong>
+- <code>ERROR</code>: Only show errors and failures
+- <code>NOTICE</code>: Show important milestones, confirmations, and errors
+- <code>INFO</code>: Show detailed progress and all of the levels above (default, recommended)
+- <code>DEBUG</code>: Show all diagnostic information and all of the levels above</p>
+<p>The default <code>INFO</code> level provides the right balance of detail for most users.</p>
+<p>Console verbosity only affects what you see on screen. Regardless of <code>--log-level</code>, a detailed log is written to the rotating <code>cdflow.log</code> file in your configured <code>logs</code> directory (see the <a href="../configuration/">Configuration Guide</a>).</p>
+<h3 id="macos-unified-logging">macOS Unified Logging</h3>
+<p>On macOS you can additionally mirror logs to the system's unified logging with the <code>--log-os-log</code> flag:</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>import<span class="w"> </span>--config<span class="w"> </span>local.yaml<span class="w"> </span>--log-os-log
+</code></pre></div>
+<p>Entries appear in Console.app (or <code>log stream</code>) under the subsystem <code>com.caestudy.cdflow</code>, with the logger name as the category.</p>
+</li>
+<li>
+<p><strong>Monitor the progress:</strong> The application will print real-time progress updates to the console. You will see information about each record being processed.</p>
+</li>
+<li>
+<p><strong>Review the results:</strong> After the import is complete, you can review the results in the <code>output</code> directory you specified in your configuration.</p>
+<ul>
+<li><code>_success.csv</code>: This file contains all the records that were successfully imported, along with the new NationBuilder Person ID and Donation ID.</li>
+<li><code>_fail.csv</code>: This file contains any records that failed to import, along with any error message(s) in the <code>NB Error Message</code> column.</li>
+</ul>
+<p><br></p>
+</li>
+<li>
+<p><strong>Verify in NationBuilder:</strong> Log in to your NationBuilder account and navigate to the Finances section. You should see the newly imported donations in your transaction list.</p>
+</li>
+</ol>
+<h2 id="rolling-back-donations-cdflow-rollback">Rolling Back Donations (<code>cdflow rollback</code>)</h2>
+<p>This command allows you to delete donations that were previously imported. This is useful for correcting mistakes or for testing purposes.</p>
+<p><strong>Warning:</strong> This is a destructive operation. Please be sure you want to remove the donations from your nation before running this command.</p>
+<h3 id="workflow_1">Workflow</h3>
+<ol>
+<li>
+<p><strong>Run the rollback command:</strong> Open your terminal and run the following command, replacing the path to your configuration file:</p>
+<div class="highlight"><pre><span></span><code>cdflow<span class="w"> </span>rollback<span class="w"> </span>--config<span class="w"> </span>/path/to/your/config.yaml
+
+<span class="c1"># Or with custom log level</span>
+cdflow<span class="w"> </span>rollback<span class="w"> </span>--config<span class="w"> </span>/path/to/your/config.yaml<span class="w"> </span>--log-level<span class="w"> </span>NOTICE
+</code></pre></div>
+</li>
+<li>
+<p><strong>Select the import to rollback:</strong> The tool will scan your <code>output</code> directory for <code>_success.csv</code> files and present them as a list of completed imports. Use arrow keys to highlight the import and press enter to select</p>
+</li>
+<li>
+<p><strong>Confirm the operation:</strong> The tool will show you a summary of the rollback operation and ask for your confirmation before proceeding.</p>
+</li>
+<li>
+<p><strong>Monitor the progress:</strong> The application will output real-time progress updates to the console as it removes each donation in the selected <code>_success.csv</code> file, in the reverse order in which they were added.</p>
+</li>
+<li>
+<p><strong>Review the results:</strong> A new <code>_rollback.csv</code> file will be created in your <code>output</code> directory, containing the results of the rollback operation.</p>
+</li>
+</ol>
+<h2 id="storage-configuration">Storage Configuration</h2>
+<p>DonationFlow supports flexible storage configuration to accommodate different deployment scenarios.</p>
+<h3 id="basic-configuration-default">Basic Configuration (Default)</h3>
+<p>By default, storage paths are resolved relative to your current working directory:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/jobs&quot;</span><span class="w">                     </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/logs&quot;</span><span class="w">                     </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/output&quot;</span><span class="w">                 </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/app_upload&quot;</span><span class="w">         </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/app_processing&quot;</span><span class="w"> </span><span class="c1"># Created relative to pwd</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;storage/import_source&quot;</span><span class="w">      </span><span class="c1"># Created relative to pwd</span>
+</code></pre></div>
+<h3 id="centralized-storage-with-base-path">Centralized Storage with Base Path</h3>
+<p>For server deployments or when you want all storage in a consistent location, use the <code>base_path</code> option:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">base_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/cdflow-data&quot;</span><span class="w">               </span><span class="c1"># Base directory for all storage</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jobs&quot;</span><span class="w">                             </span><span class="c1"># Resolves to /opt/cdflow-data/jobs</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;logs&quot;</span><span class="w">                             </span><span class="c1"># Resolves to /opt/cdflow-data/logs</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output&quot;</span><span class="w">                         </span><span class="c1"># Resolves to /opt/cdflow-data/output</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_upload&quot;</span><span class="w">                 </span><span class="c1"># Resolves to /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_processing&quot;</span><span class="w">         </span><span class="c1"># Resolves to /opt/cdflow-data/app_processing</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;import_source&quot;</span><span class="w">              </span><span class="c1"># Resolves to /opt/cdflow-data/import_source</span>
+</code></pre></div>
+<h3 id="mixed-configuration">Mixed Configuration</h3>
+<p>You can combine <code>base_path</code> with absolute path overrides for specific directories:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">base_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt/cdflow-data&quot;</span><span class="w">                </span><span class="c1"># Base for relative paths</span>
+<span class="w">  </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;logs&quot;</span><span class="w">                              </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/logs</span>
+<span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;jobs&quot;</span><span class="w">                              </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/jobs</span>
+<span class="w">    </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output&quot;</span><span class="w">                          </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/output</span>
+<span class="w">    </span><span class="nt">app_upload</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_upload&quot;</span><span class="w">                  </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">app_processing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app_processing&quot;</span><span class="w">          </span><span class="c1"># Using base_path, resolves to: /opt/cdflow-data/app_upload</span>
+<span class="w">    </span><span class="nt">cli_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/path/to/your/import_source&quot;</span><span class="w"> </span><span class="c1"># Using absolute path: /path/to/your/import_source</span>
+</code></pre></div>
+<h3 id="benefits-of-base-path">Benefits of Base Path</h3>
+<ul>
+<li><strong>Server Deployments</strong>: Centralize all application data in one location</li>
+<li><strong>Permissions</strong>: Easier to manage file permissions for a single directory tree</li>
+<li><strong>Backups</strong>: Simple to backup entire application data directory</li>
+<li><strong>Docker</strong>: Clean separation of application data from container filesystem</li>
+<li><strong>Multi-User</strong>: Each user can have their own base_path in shared environments</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

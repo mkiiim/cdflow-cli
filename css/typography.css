@@ -1,0 +1,288 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+    --df-ink: #111111;
+    --df-mid: rgba(17, 17, 17, 0.58);
+    --df-dim: rgba(17, 17, 17, 0.3);
+    --df-rule: rgba(17, 17, 17, 0.12);
+    --df-paper: #fafafa;
+    --df-panel: rgba(255, 255, 255, 0.82);
+    --df-hatch: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        rgba(17, 17, 17, 0.045) 4px,
+        rgba(17, 17, 17, 0.045) 5px
+    );
+
+    --md-text-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif !important;
+    --md-code-font-family: "IBM Plex Mono", "SFMono-Regular", "Consolas", monospace !important;
+}
+
+body,
+[data-md-color-scheme="default"] {
+    background-color: var(--df-paper);
+    color: var(--df-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif !important;
+}
+
+.md-typeset,
+.md-header__title,
+.md-tabs,
+.md-nav,
+.md-search__form,
+.md-search-result__meta {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+code,
+kbd,
+pre,
+.md-typeset code,
+.md-typeset pre,
+.md-typeset .highlight,
+.md-header__source,
+.md-nav__title,
+.md-nav__item .md-nav__link,
+.df-hero__eyebrow,
+.df-panel__label,
+.df-sheet__label {
+    font-family: "IBM Plex Mono", monospace;
+}
+
+.md-header {
+    background: rgba(250, 250, 250, 0.94);
+    color: var(--df-ink);
+    border-top: 3px solid var(--df-ink);
+    border-bottom: 1px solid var(--df-rule);
+    box-shadow: none;
+    backdrop-filter: blur(10px);
+}
+
+.md-header__button,
+.md-header__topic,
+.md-search__icon,
+.md-search__input,
+.md-tabs__link,
+.md-nav__link,
+.md-nav__title,
+.md-nav__item .md-nav__link--active,
+.md-typeset a {
+    color: var(--df-ink);
+}
+
+.md-tabs {
+    background: transparent;
+    color: var(--df-mid);
+}
+
+.md-main {
+    background:
+        linear-gradient(to bottom, rgba(17, 17, 17, 0.04), transparent 14rem),
+        var(--df-paper);
+}
+
+.md-main__inner {
+    margin-top: 0;
+}
+
+.md-content {
+    padding-bottom: 4rem;
+}
+
+.md-content__inner {
+    padding-top: 2rem;
+}
+
+.md-sidebar {
+    padding-top: 1rem;
+}
+
+.md-typeset h1 {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(2.8rem, 6vw, 4.8rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    text-transform: none;
+    font-weight: 700;
+    margin: 0 0 1.25rem;
+}
+
+.md-typeset h2 {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(1.65rem, 3vw, 2.2rem);
+    text-transform: none;
+    letter-spacing: -0.02em;
+    font-weight: 650;
+    margin-top: 3rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--df-rule);
+}
+
+.md-typeset h3 {
+    font-size: 1.08rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.md-typeset h4 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.md-typeset p,
+.md-typeset li {
+    font-size: 0.84rem;
+    line-height: 1.72;
+    color: var(--df-ink);
+}
+
+.md-typeset strong {
+    color: var(--df-ink);
+}
+
+.md-typeset a {
+    text-decoration: underline;
+    text-decoration-color: rgba(17, 17, 17, 0.22);
+    text-underline-offset: 0.16em;
+}
+
+.md-typeset hr {
+    border-bottom-color: var(--df-rule);
+}
+
+.md-typeset code {
+    background: rgba(17, 17, 17, 0.05);
+    border-radius: 0;
+}
+
+.md-typeset pre > code {
+    border: 1px solid var(--df-rule);
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+    border-radius: 0;
+    border: 1px solid var(--df-rule);
+    box-shadow: none;
+}
+
+.md-typeset table:not([class]) {
+    border: 1px solid var(--df-rule);
+}
+
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+    border-top: 1px solid var(--df-rule);
+}
+
+.df-ae {
+    border-bottom: 4px solid var(--df-ink);
+    padding-bottom: 0.04em;
+}
+
+.df-hero {
+    padding: 1rem 0 2.5rem;
+}
+
+.df-hero__eyebrow {
+    display: inline-block;
+    margin-bottom: 1.2rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--df-mid);
+}
+
+.df-hero__lede {
+    max-width: 42rem;
+    font-size: 0.95rem;
+    color: var(--df-mid);
+}
+
+.df-rule {
+    width: 100%;
+    height: 3px;
+    background: var(--df-ink);
+    margin: 1.5rem 0 1.75rem;
+}
+
+.df-grid {
+    display: grid;
+    gap: 1rem;
+    margin: 1.5rem 0 0;
+}
+
+.df-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.df-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.df-panel,
+.df-sheet {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--df-rule);
+    background-image: var(--df-hatch);
+}
+
+.df-panel::before,
+.df-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--df-panel);
+}
+
+.df-panel > *,
+.df-sheet > * {
+    position: relative;
+    z-index: 1;
+}
+
+.df-panel {
+    padding: 1.35rem 1.4rem;
+}
+
+.df-sheet {
+    padding: 1.5rem 1.6rem;
+}
+
+.df-panel__label,
+.df-sheet__label {
+    margin-bottom: 0.9rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--df-mid);
+}
+
+.df-panel p,
+.df-sheet p,
+.df-sheet li {
+    margin-top: 0;
+}
+
+.df-sheet ul {
+    margin: 0;
+}
+
+@media screen and (max-width: 76.1875em) {
+    .df-grid--3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 60em) {
+    .df-grid--2,
+    .df-grid--3 {
+        grid-template-columns: 1fr;
+    }
+
+    .md-typeset h1 {
+        font-size: clamp(2.2rem, 12vw, 3.2rem);
+    }
+}
