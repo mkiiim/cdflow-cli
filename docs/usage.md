@@ -166,6 +166,18 @@ This is the main command for importing donations into NationBuilder.
 
     The default `INFO` level provides the right balance of detail for most users.
 
+    Console verbosity only affects what you see on screen. Regardless of `--log-level`, a detailed log is written to the rotating `cdflow.log` file in your configured `logs` directory (see the [Configuration Guide](configuration.md)).
+
+    ### macOS Unified Logging
+
+    On macOS you can additionally mirror logs to the system's unified logging with the `--log-os-log` flag:
+
+    ```bash
+    cdflow import --config local.yaml --log-os-log
+    ```
+
+    Entries appear in Console.app (or `log stream`) under the subsystem `com.caestudy.cdflow`, with the logger name as the category.
+
 5.  **Monitor the progress:** The application will print real-time progress updates to the console. You will see information about each record being processed.
 
 6.  **Review the results:** After the import is complete, you can review the results in the `output` directory you specified in your configuration.

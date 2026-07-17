@@ -113,9 +113,23 @@ storage:
 ```
 
 -   `jobs`: The directory where the application will store JSON job files. These files contain a summary of each import run and are useful for auditing.
--   `logs`: The directory where the application will store detailed log files. A new log file is created for each import run.
+-   `logs`: The directory where the application writes its rotating log file, `cdflow.log` (10 MB per file, 3 rotated backups). All runs log to this single file rather than one file per run.
 -   `output`: The directory where the application will write the `_success.csv` and `_fail.csv` files of the records that have been successfully imported or have failed import
 -   `cli_source`: The directory where the application will look for your CSV files to be imported, if not specified on the command line.
+
+### `logging`
+
+This section controls log output levels and destinations.
+
+```yaml
+logging:
+  file_level: "DEBUG"                      # Rotating log file level, or "NONE" to disable file logging
+  console_level: "INFO"                    # Default console level (the --log-level CLI flag overrides this)
+```
+
+-   `file_level`: Level written to the rotating `cdflow.log` file in your `storage.paths.logs` directory. Set to `NONE` to disable file logging entirely.
+-   `console_level`: Default console verbosity. The `--log-level` command-line flag takes precedence when provided.
+-   `os_log` (optional, macOS only): Set to `true` to also send logs to macOS unified logging (viewable in Console.app under subsystem `com.caestudy.cdflow`). Equivalent to passing `--log-os-log` on the command line.
 
 ### `cli_import`
 

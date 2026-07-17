@@ -51,7 +51,7 @@ DonationFlow CLI was originally developed to help a non-profit charitable organi
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - A NationBuilder account with API access.
 - A configured NationBuilder OAuth application.
 - Donation data exported as CSV files from CanadaHelps or PayPal.
